@@ -27,7 +27,7 @@ export const GITHUB = {
 
 export const ABOUT = {
   lead: "I design and run the systems behind the product.",
-  body: "I'm Gunit — a backend & DevOps engineer focused on building services that stay fast and reliable under load, and on the automation that ships them safely. From API design to Kubernetes, CI/CD and cloud infra, I care about clean architecture, observability, and making infrastructure boring (in the best way).",
+  body: "I'm Gunit, a backend & DevOps engineer focused on building services that stay fast and reliable under load, and on the automation that ships them safely. From API design to Kubernetes, CI/CD and cloud infra, I care about clean architecture, observability, and making infrastructure boring (in the best way).",
 }
 
 export const SKILLS = [
@@ -202,5 +202,17 @@ export const SLIDER_FOOD = [
     },
     url: "https://github.com/Protofarm/gocher",
     bg: [0x6c9a8f, 0x2a3f6b, 0xc4a05a],
+  },
+  {
+    name: "niri-shell",
+    tag: "SHELL",
+    rot: [0, 0, 0],
+    wiggle: 0.6,
+    copy: {
+      name: "niri-caelestia-shell",
+      description: "Desktop shell · QML · 2025",
+    },
+    url: "https://github.com/Fexaop/niri-caelestia-shell",
+    bg: [0x3b4a8b, 0x6c4f9e, 0xc9a04a],
   },
 ]
