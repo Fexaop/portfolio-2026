@@ -1,0 +1,31 @@
+---
+import Section from "@c/Section.astro"
+import BouncySvg from "./BouncySvg.astro"
+import { ABOUT } from "~/content"
+---
+
+<Section
+  id="about"
+  class="px-gx md:gap-lg flex flex-col items-center py-[7rem] md:py-[10rem]"
+>
+  <div class="w-grids-4 md:w-grids-5 md:pb-lg">
+    <BouncySvg name="about" />
+  </div>
+
+  <div class="md:w-grids-7 gap-md flex flex-col">
+    <h2
+      data-module="text"
+      data-type="words"
+      class="text-md md:text-lg leading-[1.2em] font-semibold text-balance"
+    >
+      {ABOUT.lead}
+    </h2>
+    <p
+      data-module="text"
+      data-type="words"
+      class="max-w-[62ch] leading-[1.6em] text-gray-300"
+    >
+      {ABOUT.body}
+    </p>
+  </div>
+</Section>

@@ -1,0 +1,24 @@
+---
+import Layout from "~/layouts/Layout.astro"
+
+// * portfolio
+import Fexa from "@c/landing/Fexa.astro"
+import About from "@c/landing/About.astro"
+import Skills from "@c/landing/Skills.astro"
+import Projects from "@c/landing/Projects.astro"
+import Contact from "@c/landing/Contact.astro"
+
+import Canvas from "~/components/Canvas.astro"
+import Cursor from "@c/Cursor.astro"
+---
+
+<Layout isHome={true}>
+  <Fexa />
+  <About />
+  <Skills />
+  <Projects />
+  <Contact />
+  <Cursor />
+</Layout>
+
+<Canvas />

@@ -1,0 +1,17 @@
+---
+import Svgg from "../svg/Svgg.astro"
+
+const { name, class: className, fade = false } = Astro.props
+---
+
+<figure
+  data-module="bouncy"
+  data-fade={fade ? "" : undefined}
+  class={className}
+  style={fade ? "opacity: 0" : undefined}
+  role="img"
+  aria-label={name}
+>
+  <Svgg name={name} class="size-full" />
+  <figcaption class="sr-only">{name}</figcaption>
+</figure>

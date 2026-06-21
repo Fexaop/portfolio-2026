@@ -1,0 +1,37 @@
+---
+import Ferrofluid from "./react-bits/Ferrofluid.tsx"
+---
+
+<div class="ferro-bg" aria-hidden="true">
+  <Ferrofluid
+    client:only="react"
+    colors={["#A855F7", "#7C3AED", "#6366F1"]}
+    speed={0.5}
+    scale={1.6}
+    turbulence={1}
+    fluidity={0.1}
+    rimWidth={0.2}
+    sharpness={2.5}
+    shimmer={1.5}
+    glow={2}
+    flowDirection="down"
+    opacity={1}
+    mouseInteraction={true}
+    mouseStrength={1}
+    mouseRadius={0.35}
+  />
+</div>
+
+<style>
+  .ferro-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1; /* behind content + the slider canvas */
+    pointer-events: none;
+  }
+
+  .ferro-bg :global(.ferrofluid-container) {
+    width: 100%;
+    height: 100%;
+  }
+</style>

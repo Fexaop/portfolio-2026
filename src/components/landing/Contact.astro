@@ -1,0 +1,43 @@
+---
+import Section from "@c/Section.astro"
+import BouncySvg from "./BouncySvg.astro"
+import HoverUl from "@c/HoverUl.astro"
+import { PROFILE, LINKS } from "~/content"
+---
+
+<Section
+  id="contact"
+  class="px-gx gap-lg flex min-h-[85svh] flex-col items-center justify-center py-[7rem] text-center"
+>
+  <div class="w-grids-5 md:w-grids-8 md:pb-md">
+    <BouncySvg name="contact" />
+  </div>
+
+  <p
+    data-module="text"
+    data-type="words"
+    class="text-md max-w-[44ch] leading-[1.4em] font-semibold text-balance"
+  >
+    Open to backend & DevOps roles and freelance work — let&rsquo;s build
+    something reliable.
+  </p>
+
+  <ul class="gap-lg text-lg flex font-semibold">
+    <li data-hover="opacity">
+      <a href={LINKS.github} target="_blank" rel="noopener">
+        <HoverUl text="GitHub" />
+      </a>
+    </li>
+    <li data-hover="opacity">
+      <a href={LINKS.email}>
+        <HoverUl text="Email" />
+      </a>
+    </li>
+  </ul>
+
+  <p
+    class="pt-2xl font-mono text-sm tracking-widest text-gray-500 uppercase"
+  >
+    © 2026 {PROFILE.name}
+  </p>
+</Section>

@@ -1,0 +1,98 @@
+---
+import { LINKS, PROFILE } from "~/content"
+
+import Github from "@svg/github.astro"
+
+import HoverUl from "@c/HoverUl.astro"
+
+const BRAND = "FEXAOP"
+
+const links = [
+  { label: "ABOUT", href: "/#about" },
+  { label: "WORK", href: "/#work" },
+  { label: "CONTACT", href: "/#contact" },
+  {
+    label: "GITHUB",
+    href: LINKS.github,
+    icon: "Github",
+    target: "_blank",
+  },
+]
+---
+
+<nav
+  data-module="nav"
+  style="opacity: 0"
+  class="px-gx py-gy pointer-events-none fixed top-0 z-10 flex w-full justify-between md:items-start"
+>
+  <a
+    href="/"
+    aria-label={`${BRAND} — back to homepage`}
+    class="brand pointer-events-auto flex flex-col"
+  >
+    <span class="font-weird flex text-[1.6rem] leading-[0.9]" aria-hidden="true">
+      {
+        BRAND.split("").map((c, i) => (
+          <span class="brand-letter inline-block" style={`--i:${i}`}>
+            {c}
+          </span>
+        ))
+      }
+    </span>
+    <span
+      class="font-mono text-[.7em] tracking-widest text-gray-400 uppercase"
+    >
+      {PROFILE.role}
+    </span>
+  </a>
+
+  <ul class="flex flex-col items-end gap-2 md:flex-row md:gap-4">
+    {
+      links.map(link => (
+        <li class="relative text-[12px] leading-[1em]">
+          <a
+            href={link.href}
+            class="pointer-events-auto tracking-wide"
+            target={link.target}
+          >
+            {!link.icon && <HoverUl text={link.label} />}
+            {link.icon === "Github" && (
+              <figure data-hover="opacity">
+                <Github width="2rem" />
+                <figcaption class="sr-only">{link.label}</figcaption>
+              </figure>
+            )}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .brand-letter {
+    transform-origin: center bottom;
+    will-change: transform;
+  }
+
+  /* playful staggered bounce on hover */
+  .brand:hover .brand-letter {
+    animation: brand-bounce 0.55s ease;
+    animation-delay: calc(var(--i) * 0.045s);
+  }
+
+  @keyframes brand-bounce {
+    0% {
+      transform: translateY(0) rotate(0);
+    }
+    35% {
+      transform: translateY(-0.32em) rotate(-8deg);
+    }
+    65% {
+      transform: translateY(0.06em) rotate(4deg);
+    }
+    100% {
+      transform: translateY(0) rotate(0);
+    }
+  }
+</style>

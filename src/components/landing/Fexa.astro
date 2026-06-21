@@ -1,0 +1,25 @@
+---
+import Section from "@c/Section.astro"
+import BouncySvg from "./BouncySvg.astro"
+import Loader from "./Loader.astro"
+---
+
+<Section
+  class="px-gx gap-lg relative flex min-h-[100svh] flex-col items-center justify-center text-center"
+>
+  <div class="w-grids-6 md:w-grids-8">
+    <BouncySvg name="fexa" fade />
+  </div>
+
+  <p
+    data-module="text"
+    data-type="words"
+    data-delay="0.8"
+    class="text-md md:w-grids-4 w-grids-4 leading-[1.3em] font-semibold text-balance"
+  >
+    Backend &amp; DevOps engineer building reliable, scalable systems and
+    automated infrastructure. — Gunit Kumar
+  </p>
+
+  <Loader />
+</Section>
