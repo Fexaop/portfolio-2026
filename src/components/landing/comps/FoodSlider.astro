@@ -41,9 +41,9 @@ const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
           >
             <div
               data-module="wobble"
-              class="font-weird pointer-events-none px-4 text-center text-[clamp(2.6rem,6vw,5.5rem)] leading-[0.9] text-white"
+              class="pointer-events-none flex w-[58%] items-center justify-center"
             >
-              {slide.tag}
+              <Svgg name={slide.name} class="h-auto w-full" />
             </div>
           </div>
 
