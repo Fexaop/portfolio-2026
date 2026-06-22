@@ -1,0 +1,227 @@
+---
+// No server-side logic needed
+---
+
+<div id="wasm-terminal-wrap">
+  <div id="wasm-terminal"></div>
+  <div id="wasm-loader">
+    <span id="wasm-status">$ ssh portfolio.pwnhub.in</span>
+    <span id="wasm-sub">loading wasm...</span>
+  </div>
+</div>
+
+<style>
+  #wasm-terminal-wrap {
+    position: absolute;
+    inset: 0;
+    background: #000;
+  }
+
+  #wasm-terminal {
+    width: 100%;
+    height: 100%;
+  }
+
+  #wasm-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  #wasm-loader.hidden {
+    opacity: 0;
+  }
+
+  #wasm-status {
+    font-size: 14px;
+    color: #a855f7;
+    letter-spacing: 0.05em;
+  }
+
+  #wasm-sub {
+    font-size: 11px;
+    color: #4b5563;
+  }
+</style>
+
+<!-- wasm_exec.js must be a classic (non-module) script so it runs
+     synchronously and sets up globalThis.Go / globalThis.fs before
+     our module script runs. -->
+<script is:inline src="/wasm_exec.js"></script>
+
+<script>
+  import { Terminal } from '@xterm/xterm';
+  import { FitAddon } from '@xterm/addon-fit';
+  import '@xterm/xterm/css/xterm.css';
+
+  const container = document.getElementById('wasm-terminal')!;
+  const loader    = document.getElementById('wasm-loader')!;
+  const subStatus = document.getElementById('wasm-sub')!;
+
+  // ── 1. Create xterm.js terminal ───────────────────────────────────────────
+  const term = new Terminal({
+    cursorBlink: false,
+    fontFamily: '"Cascadia Code", "Fira Code", "JetBrains Mono", ui-monospace, monospace',
+    fontSize: 14,
+    lineHeight: 1.2,
+    allowTransparency: false,
+    convertEol: true,
+    scrollback: 0,
+    theme: {
+      background:          '#000000',
+      foreground:          '#f9fafb',
+      cursor:              '#a855f7',
+      cursorAccent:        '#000000',
+      selectionBackground: 'rgba(168,85,247,0.35)',
+      black:               '#000000',
+      brightBlack:         '#374151',
+      white:               '#f9fafb',
+      brightWhite:         '#ffffff',
+      red:                 '#c084fc',
+      brightRed:           '#d8b4fe',
+      green:               '#a855f7',
+      brightGreen:         '#c084fc',
+      yellow:              '#e9d5ff',
+      brightYellow:        '#f5ebff',
+      blue:                '#7c3aed',
+      brightBlue:          '#8b5cf6',
+      magenta:             '#a855f7',
+      brightMagenta:       '#c084fc',
+      cyan:                '#9d7bea',
+      brightCyan:          '#b9a3f0',
+    },
+  });
+
+  const fit = new FitAddon();
+  term.loadAddon(fit);
+  term.open(container);
+
+  await new Promise(r => requestAnimationFrame(r));
+  fit.fit();
+
+  // Expose current size so Go can read it on startup
+  (globalThis as any).__termCols = term.cols;
+  (globalThis as any).__termRows = term.rows;
+
+  window.addEventListener('resize', () => {
+    fit.fit();
+    (globalThis as any).__termCols = term.cols;
+    (globalThis as any).__termRows = term.rows;
+    (globalThis as any).__goResize?.(term.cols, term.rows);
+  });
+
+  term.onResize(({ cols, rows }) => {
+    (globalThis as any).__termCols = cols;
+    (globalThis as any).__termRows = rows;
+    (globalThis as any).__goResize?.(cols, rows);
+  });
+
+  // ── 2. Key dispatch — parse raw sequences and call Go's __goKey ───────────
+  // Go registers __goKey after startup; we store events in a queue until
+  // then and flush once Go signals readiness via __goReady.
+
+  const pendingKeys: string[] = [];
+  let goReady = false;
+
+  function dispatchKey(name: string) {
+    if (goReady) {
+      (globalThis as any).__goKey?.(name);
+    } else {
+      pendingKeys.push(name);
+    }
+  }
+
+  // xterm.js onData gives us the raw byte string xterm would send over a PTY.
+  // Map common sequences to human-readable key names for Go.
+  term.onData((data: string) => {
+    let name: string | null = null;
+
+    switch (data) {
+      case '\x1b[A': name = 'up';        break;
+      case '\x1b[B': name = 'down';      break;
+      case '\x1b[C': name = 'right';     break;
+      case '\x1b[D': name = 'left';      break;
+      case '\x1bOA': name = 'up';        break; // application cursor keys
+      case '\x1bOB': name = 'down';      break;
+      case '\x1bOC': name = 'right';     break;
+      case '\x1bOD': name = 'left';      break;
+      case '\x1b[Z': name = 'shift+tab'; break;
+      case '\t':     name = 'tab';       break;
+      case '\r':     name = 'enter';     break;
+      case '\x03':   name = 'ctrl+c';    break;
+      default:
+        if (data.length === 1 && data >= ' ') name = data;
+        break;
+    }
+
+    if (name) dispatchKey(name);
+  });
+
+  // ── 3. Override globalThis.fs for stdout → xterm.js ─────────────────────
+  // Input is handled via the __goKey callback above, not via stdin reads,
+  // so we only need to bridge stdout/stderr here.
+  const origFs = (globalThis as any).fs;
+  (globalThis as any).fs = {
+    ...origFs,
+
+    writeSync(fd: number, buf: Uint8Array): number {
+      if (fd === 1 || fd === 2) {
+        term.write(buf);
+        return buf.length;
+      }
+      return origFs.writeSync(fd, buf);
+    },
+
+    write(fd: number, buf: Uint8Array, offset: number, length: number, _pos: null, cb: (err: null, n: number) => void) {
+      if (fd === 1 || fd === 2) {
+        term.write(buf.subarray(offset, offset + length));
+        cb(null, length);
+        return;
+      }
+      origFs.write(fd, buf, offset, length, _pos, cb);
+    },
+  };
+
+  // ── 4. Callbacks registered BEFORE running Go ────────────────────────────
+
+  // Called by Go once it's fully initialised (main event loop running).
+  // Flush any keys the user pressed before Go was ready.
+  (globalThis as any).__goReady = () => {
+    goReady = true;
+    for (const k of pendingKeys) {
+      (globalThis as any).__goKey?.(k);
+    }
+    pendingKeys.length = 0;
+    loader.classList.add('hidden');
+    term.focus();
+  };
+
+  // Called by Go when the user presses q / ctrl+c.
+  (globalThis as any).__goExited = () => {
+    term.write('\r\n\x1b[2m— session ended · refresh to restart —\x1b[0m\r\n');
+    goReady = false;
+  };
+
+  // ── 5. Load and run the WASM binary ──────────────────────────────────────
+  subStatus.textContent = 'fetching portfolio.wasm…';
+
+  try {
+    const go = new (globalThis as any).Go();
+    const result = await WebAssembly.instantiateStreaming(
+      fetch('/portfolio.wasm'),
+      go.importObject,
+    );
+    subStatus.textContent = 'starting…';
+    go.run(result.instance); // non-blocking: Go main() runs in WASM scheduler
+  } catch (err) {
+    subStatus.textContent = `error: ${err}`;
+    console.error('[wasm-terminal]', err);
+  }
+</script>
