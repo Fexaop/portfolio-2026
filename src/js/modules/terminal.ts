@@ -27,6 +27,8 @@ export class Terminal {
   #stage: HTMLElement
   #screen: HTMLElement
   #content: HTMLElement | null
+  #loader: HTMLElement | null = null
+  #loaderStatus: HTMLElement | null = null
   #xtermDiv: HTMLDivElement | null = null
   #lp = 0
   #prevT = 0
@@ -44,6 +46,8 @@ export class Terminal {
     this.#stage = element.querySelector('[data-term="stage"]') as HTMLElement
     this.#screen = element.querySelector('[data-term="screen"]') as HTMLElement
     this.#content = element.querySelector('[data-term="content"]')
+    this.#loader = element.querySelector('[data-term="loader"]')
+    this.#loaderStatus = element.querySelector('[data-term="loader-status"]')
 
     try { this.#gl = new TerminalGl(this.#screen) } catch {}
 
@@ -81,7 +85,14 @@ export class Terminal {
       const proto = location.protocol === "https:" ? "wss" : "ws"
       this.#ws = new WebSocket(`${proto}://${location.host}/__ssh`)
     } catch {
+      if (this.#loaderStatus) this.#loaderStatus.textContent = "no server — demo mode"
       return
+    }
+
+    this.#ws.onopen = () => {
+      if (this.#loaderStatus && !this.#term) {
+        this.#loaderStatus.textContent = "connected, waiting for session…"
+      }
     }
 
     this.#ws.onmessage = e => {
@@ -96,6 +107,8 @@ export class Terminal {
     this.#ws.onclose = () => {
       if (this.#term) {
         this.#term.write("\r\n\x1b[2m— connection closed —\x1b[0m\r\n")
+      } else if (this.#loaderStatus) {
+        this.#loaderStatus.textContent = "disconnected"
       }
     }
   }
@@ -158,6 +171,8 @@ export class Terminal {
 
       this.#term = term
 
+      if (this.#loader) this.#loader.style.opacity = "0"
+
       this.#ro = new ResizeObserver(() => { try { fit.fit() } catch {} })
       this.#ro.observe(div)
 
@@ -191,6 +206,7 @@ export class Terminal {
         term.focus()
       } else if (!ws || ws.readyState === WebSocket.CLOSED) {
         this.#buf = []
+        if (this.#loaderStatus) this.#loaderStatus.textContent = "demo mode"
         await this.#sim(run, term)
       } else {
         // still CONNECTING — wait for open or fallback after 4s

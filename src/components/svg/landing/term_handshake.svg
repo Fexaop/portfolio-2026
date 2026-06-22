@@ -1,0 +1,16 @@
+<svg width="140" height="80" viewBox="0 0 140 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- left node timeline -->
+<path d="M14 2L14 76" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+<!-- right node timeline -->
+<path d="M126 2L126 76" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+<!-- left server chip -->
+<path d="M5 2L23 2L23 18L5 18Z" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- right server chip -->
+<path d="M117 2L135 2L135 18L117 18Z" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- SYN: diagonal line left→right with arrowhead -->
+<path d="M14 24L126 36 M119 30L126 36L119 42" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- SYN-ACK: diagonal line right→left with arrowhead -->
+<path d="M126 44L14 56 M21 50L14 56L21 62" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- ACK: diagonal line left→right with arrowhead -->
+<path d="M14 62L126 74 M119 68L126 74L119 80" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

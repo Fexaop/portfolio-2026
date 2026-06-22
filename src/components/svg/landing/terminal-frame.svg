@@ -4,6 +4,6 @@
   <circle cx="58" cy="64" r="9"/>
   <circle cx="92" cy="64" r="9"/>
   <circle cx="126" cy="64" r="9"/>
-  <path d="M732 58 L760 70"/>
-  <path d="M760 58 L732 70"/>
+  <path d="M738 56 L754 72"/>
+  <path d="M754 56 L738 72"/>
 </svg>
