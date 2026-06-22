@@ -1,0 +1,20 @@
+<svg width="140" height="62" viewBox="0 0 140 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- main branch line -->
+<path d="M6 44L134 44" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+<!-- feature branch: splits off main, runs parallel, merges back -->
+<path d="M28 44C32 34 38 22 50 20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M50 20L90 20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M90 20C102 20 108 32 112 44" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<!-- commit dots on main branch -->
+<circle cx="6" cy="44" r="4.5" stroke="white" stroke-width="2"/>
+<circle cx="28" cy="44" r="4.5" stroke="white" stroke-width="2"/>
+<circle cx="70" cy="44" r="4.5" stroke="white" stroke-width="2"/>
+<circle cx="112" cy="44" r="4.5" stroke="white" stroke-width="2"/>
+<circle cx="130" cy="44" r="4.5" stroke="white" stroke-width="2"/>
+<!-- commit dots on feature branch -->
+<circle cx="50" cy="20" r="4" stroke="white" stroke-width="2"/>
+<circle cx="70" cy="20" r="4" stroke="white" stroke-width="2"/>
+<circle cx="90" cy="20" r="4" stroke="white" stroke-width="2"/>
+<!-- HEAD arrow at right end of main -->
+<path d="M122 37L131 44L122 51" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

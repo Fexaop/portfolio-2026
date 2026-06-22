@@ -4,19 +4,30 @@ import { SLIDER_FOOD } from "../../../content"
 const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
 ---
 
+<!-- Tall scroll track: scrolling through it scrubs the carousel "assembly".
+     The inner block is sticky so it stays centred on screen while you scroll,
+     and the WebGL cards fly in one by one and dock into the horizontal row. -->
 <div
   style="--slide-w: clamp(18rem, 25vw, 30rem) "
-  class="gap-lg flex w-full flex-col overflow-clip py-4"
+  class="relative h-[300vh] w-full"
   data-module="fslider"
 >
-  <!-- slider -->
+  <div
+    class="gap-lg sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-clip"
+  >
+  <!-- slider track: the carousel is rendered in WebGL, so this flat row is
+       hidden (opacity-0) and non-interactive — scroll drives everything now —
+       but it stays in the layout so smooothy can measure item widths. -->
   <ul
     data-slider="wrapper"
-    class="ml-[calc((50vw-var(--slide-w)/2)-2rem)] flex text-[.8em]"
+    class="pointer-events-none ml-[calc((50vw-var(--slide-w)/2)-2rem)] flex text-[.8em] opacity-0 select-none"
+    aria-hidden="true"
   >
     {
       SLIDER_FOOD.map((slide, i) => (
         <li
+          data-name={slide.copy.name}
+          data-desc={slide.copy.description}
           class:list={[
             "relative z-2 flex shrink-0 flex-col gap-2 px-[2rem]",
             i === 0 && "active",
@@ -39,10 +50,8 @@ const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
             data-gl
             class="relative z-10 flex aspect-[4/4.5] w-[var(--slide-w)] items-center justify-center md:aspect-[4/5.5]"
           >
-            <div
-              data-module="wobble"
-              class="pointer-events-none flex w-[58%] items-center justify-center"
-            >
+            <!-- source svg for the WebGL ring icon (rasterized at runtime) -->
+            <div class="pointer-events-none flex w-[58%] items-center justify-center">
               <Svgg name={slide.name} class="h-auto w-full" />
             </div>
           </div>
@@ -69,9 +78,41 @@ const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
     }
   </ul>
 
-  <!-- bottom ui -->
-  <div data-no-cursor class="relative flex justify-center -outline-offset-1">
-    <div data-slider="controls" class="flex flex-col gap-2">
+  <!-- caption for the front-facing slide (text lives in the DOM since the ring
+       itself is WebGL); updated on every settle -->
+  <div
+    class="pointer-events-none relative z-10 flex flex-col items-center gap-1 text-center"
+  >
+    <h2
+      data-caption-name
+      class="text-2xl font-semibold tracking-tight uppercase"
+    >
+    </h2>
+    <p
+      data-caption-desc
+      class="font-mono text-sm tracking-widest uppercase opacity-70"
+    >
+    </p>
+  </div>
+
+  <!-- bottom ui: prev arrow | dots | next arrow, inline and centred -->
+  <div data-no-cursor class="relative flex items-center justify-center gap-6">
+    <ul data-slider="arrows" class="contents">
+      <li data-module="alpha" data-delay=".5" class="order-1">
+        <button class="pointer-events-auto" aria-label="previous slide">
+          <div class="rotate-180">
+            <Svgg name="arrow-r" />
+          </div>
+        </button>
+      </li>
+      <li data-module="alpha" data-delay=".7" class="order-3">
+        <button class="pointer-events-auto" aria-label="next slide">
+          <Svgg name="arrow-r" />
+        </button>
+      </li>
+    </ul>
+
+    <div data-slider="controls" class="order-2 flex flex-col gap-2">
       <ul class="flex gap-[1rem]">
         {
           SLIDES.map((slide, i) => (
@@ -88,24 +129,7 @@ const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
         }
       </ul>
     </div>
-
-    <ul
-      data-slider="arrows"
-      class="px-gx pointer-events-none absolute inset-0 z-10 flex items-center justify-between gap-12 md:justify-end"
-    >
-      <li data-module="alpha" data-delay=".5">
-        <button class="pointer-events-auto" aria-label="previous slide">
-          <div class="rotate-180">
-            <Svgg name="arrow-r" />
-          </div>
-        </button>
-      </li>
-      <li data-module="alpha" data-delay=".7">
-        <button class="pointer-events-auto" aria-label="next slide">
-          <Svgg name="arrow-r" />
-        </button>
-      </li>
-    </ul>
+  </div>
   </div>
 </div>
 

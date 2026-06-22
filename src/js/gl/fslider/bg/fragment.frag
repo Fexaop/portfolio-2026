@@ -5,6 +5,7 @@ precision mediump float;
 uniform vec3 COL_1;
 uniform vec3 COL_2;
 uniform vec3 COL_3;
+uniform float u_opacity;
 
 
 vec3 gradientMix(vec3 color1, vec3 color2, vec3 color3, float t) {
@@ -43,7 +44,8 @@ void main() {
 
 
     gl_FragColor.rgb = col;
-    gl_FragColor.a = 1.0;
+    // u_opacity fades the card out at the hidden ends of the diagonal stream
+    gl_FragColor.a = u_opacity;
 
     
 }

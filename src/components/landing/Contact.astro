@@ -1,43 +1,70 @@
 ---
-import Section from "@c/Section.astro"
 import BouncySvg from "./BouncySvg.astro"
 import HoverUl from "@c/HoverUl.astro"
+import Svgg from "~/components/svg/Svgg.astro"
 import { PROFILE, LINKS } from "~/content"
 ---
 
-<Section
-  id="contact"
-  class="px-gx gap-lg flex min-h-[85svh] flex-col items-center justify-center py-[7rem] text-center"
->
-  <div class="w-grids-5 md:w-grids-8 md:pb-md">
-    <BouncySvg name="contact" />
+<!-- Contact + terminal in one scroll: the hand-drawn terminal sits (small,
+     rotated, shoved left) BEHIND the contact content. As you scroll, the
+     contact content fades/scrolls away while the terminal stays pinned and
+     reveals to full size, then runs `ssh terminal.shop`. -->
+<section id="contact" data-module="terminal" class="relative h-[320vh] w-full">
+  <!-- terminal: pinned behind the content, scrubs from small -> full -->
+  <div
+    class="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden"
+  >
+    <div
+      data-term="stage"
+      class="relative aspect-[820/540] w-[88vw] max-w-[60rem] will-change-transform"
+      style="transform: translateX(-50%) rotate(45deg) scale(0.5); transform-origin: center"
+    >
+      <div class="absolute inset-0">
+        <Svgg name="terminal-frame" class="h-full w-full" />
+      </div>
+      <!-- the real ssh session (xterm) mounts here; see js/modules/terminal.ts -->
+      <div
+        data-term="screen"
+        class="absolute top-[22%] right-[6%] bottom-[7%] left-[6%] overflow-hidden"
+      >
+      </div>
+    </div>
   </div>
 
-  <p
-    data-module="text"
-    data-type="words"
-    class="text-md max-w-[44ch] leading-[1.4em] font-semibold text-balance"
+  <!-- contact content: the first screen, in front of the terminal; fades and
+       scrolls away as you go down -->
+  <div
+    data-term="content"
+    class="px-gx gap-lg absolute inset-x-0 top-0 z-10 flex h-screen flex-col items-center justify-center text-center"
   >
-    Open to backend & DevOps roles and freelance work — let&rsquo;s build
-    something reliable.
-  </p>
+    <div class="w-grids-5 md:w-grids-8 md:pb-md">
+      <BouncySvg name="contact" />
+    </div>
 
-  <ul class="gap-lg text-lg flex font-semibold">
-    <li data-hover="opacity">
-      <a href={LINKS.github} target="_blank" rel="noopener">
-        <HoverUl text="GitHub" />
-      </a>
-    </li>
-    <li data-hover="opacity">
-      <a href={LINKS.email}>
-        <HoverUl text="Email" />
-      </a>
-    </li>
-  </ul>
+    <p
+      data-module="text"
+      data-type="words"
+      class="text-md max-w-[44ch] leading-[1.4em] font-semibold text-balance"
+    >
+      Open to backend & DevOps roles and freelance work — let&rsquo;s build
+      something reliable.
+    </p>
 
-  <p
-    class="pt-2xl font-mono text-sm tracking-widest text-gray-500 uppercase"
-  >
-    © 2026 {PROFILE.name}
-  </p>
-</Section>
+    <ul class="gap-lg text-lg flex font-semibold">
+      <li data-hover="opacity">
+        <a href={LINKS.github} target="_blank" rel="noopener">
+          <HoverUl text="GitHub" />
+        </a>
+      </li>
+      <li data-hover="opacity">
+        <a href={LINKS.email}>
+          <HoverUl text="Email" />
+        </a>
+      </li>
+    </ul>
+
+    <p class="pt-2xl font-mono text-sm tracking-widest text-gray-500 uppercase">
+      © 2026 {PROFILE.name}
+    </p>
+  </div>
+</section>

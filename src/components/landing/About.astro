@@ -1,13 +1,40 @@
 ---
 import Section from "@c/Section.astro"
 import BouncySvg from "./BouncySvg.astro"
+import Lightbulb from "./Lightbulb.astro"
+import Svgg from "~/components/svg/Svgg.astro"
 import { ABOUT } from "~/content"
 ---
 
 <Section
   id="about"
-  class="px-gx md:gap-lg flex flex-col items-center py-[7rem] md:py-[10rem]"
+  class="px-gx md:gap-lg relative flex flex-col items-center overflow-hidden py-[7rem] md:py-[10rem]"
 >
+  <Lightbulb />
+
+  <!-- scattered hand-drawn doodles that draw themselves on scroll-in -->
+  <div
+    data-module="draw"
+    class="pointer-events-none absolute top-[24%] left-[5%] hidden w-[7rem] opacity-80 md:block"
+    aria-hidden="true"
+  >
+    <Svgg name="set_drag" class="h-auto w-full" />
+  </div>
+  <div
+    data-module="draw"
+    class="pointer-events-none absolute right-[6%] bottom-[20%] hidden w-[8rem] opacity-80 md:block"
+    aria-hidden="true"
+  >
+    <Svgg name="set_extensible" class="h-auto w-full" />
+  </div>
+  <div
+    data-module="draw"
+    class="pointer-events-none absolute bottom-[26%] left-[9%] hidden w-[5rem] opacity-70 lg:block"
+    aria-hidden="true"
+  >
+    <Svgg name="wave" class="h-auto w-full" />
+  </div>
+
   <div class="w-grids-4 md:w-grids-5 md:pb-lg">
     <BouncySvg name="about" />
   </div>

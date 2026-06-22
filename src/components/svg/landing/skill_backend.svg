@@ -1,0 +1,19 @@
+<svg width="138" height="70" viewBox="0 0 138 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- server/terminal body — rounded rectangle -->
+<path d="M4 12C4 8 8 6 12 6L42 6C46 6 50 8 50 12L50 58C50 62 46 64 42 64L12 64C8 64 4 62 4 58Z" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- terminal lines inside -->
+<path d="M10 22L44 22 M10 33L44 33 M10 44L44 44" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+<!-- status LED dots -->
+<circle cx="11" cy="14" r="2.2" stroke="white" stroke-width="1.8"/>
+<circle cx="19" cy="14" r="2.2" stroke="white" stroke-width="1.8"/>
+<!-- API branch connections server → service nodes -->
+<path d="M50 22C62 22 72 13 88 12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M50 35L88 35" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<path d="M50 48C62 48 72 58 88 58" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<!-- service endpoint nodes -->
+<circle cx="94" cy="12" r="6" stroke="white" stroke-width="2"/>
+<circle cx="94" cy="35" r="6" stroke="white" stroke-width="2"/>
+<circle cx="94" cy="58" r="6" stroke="white" stroke-width="2"/>
+<!-- service mesh arc — brackets all three nodes on the right (load balancer) -->
+<path d="M100 12C118 12 118 58 100 58" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

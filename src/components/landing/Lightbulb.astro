@@ -1,0 +1,13 @@
+---
+import Svgg from "~/components/svg/Svgg.astro"
+---
+
+<!-- hand-drawn lightbulb that draws + drops from the top of the About section
+     and retracts when you scroll away (see js/modules/bulb.ts) -->
+<div
+  data-module="bulb"
+  class="pointer-events-none absolute top-0 left-[78%] z-40 hidden w-[5.5rem] md:block"
+  aria-hidden="true"
+>
+  <Svgg name="bulb" class="h-auto w-full" />
+</div>

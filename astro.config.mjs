@@ -8,6 +8,7 @@ import react from "@astrojs/react"
 import vue from "@astrojs/vue"
 
 import sitemap from "@astrojs/sitemap"
+import { sshTerminal } from "./server/ssh-proxy.mjs"
 
 export default defineConfig({
   // allow tunnels (ngrok, etc.) to reach the dev AND preview servers.
@@ -17,6 +18,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
+      sshTerminal(),
       tailwindcss(),
       qrcode(),
       glsl({

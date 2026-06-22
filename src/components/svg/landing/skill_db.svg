@@ -1,0 +1,18 @@
+<svg width="130" height="80" viewBox="0 0 130 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- left cylinder (replica): top ellipse -->
+<path d="M4 22A14 6 0 0 1 32 22A14 6 0 0 1 4 22Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- left cylinder body + bottom front arc -->
+<path d="M4 22L4 60A14 6 0 0 0 32 60L32 22" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<!-- center cylinder (primary, taller): top ellipse -->
+<path d="M47 14A18 7 0 0 1 83 14A18 7 0 0 1 47 14Z" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- center cylinder body + bottom front arc -->
+<path d="M47 14L47 66A18 7 0 0 0 83 66L83 14" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+<!-- right cylinder (replica): top ellipse -->
+<path d="M98 22A14 6 0 0 1 126 22A14 6 0 0 1 98 22Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- right cylinder body + bottom front arc -->
+<path d="M98 22L98 60A14 6 0 0 0 126 60L126 22" stroke="white" stroke-width="2" stroke-linecap="round"/>
+<!-- replication arrow: left → center -->
+<path d="M32 42L42 42 M38 37L47 42L38 47" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- replication arrow: center → right -->
+<path d="M83 42L93 42 M88 37L98 42L88 47" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

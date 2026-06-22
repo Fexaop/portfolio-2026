@@ -2,10 +2,16 @@
   "name": "web",
   "type": "module",
   "version": "0.0.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "node-pty",
+      "esbuild"
+    ]
+  },
   "scripts": {
     "dev": "astro dev --host",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "astro build && node server/preview.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -18,12 +24,16 @@
     "@tailwindcss/vite": "^4.0.9",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "gsap": "^3.13.0",
     "lenis": "^1.2.0",
+    "node-pty": "^1.1.0",
     "ogl": "^1.0.11",
     "prettier-plugin-glsl": "^0.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sirv": "^3.0.2",
     "smooothy": "0.0.35",
     "solid-js": "^1.9.5",
     "tailwindcss": "^4.0.9",
@@ -31,7 +41,8 @@
     "virtual-scroll": "^2.2.1",
     "vue": "^3.5.13",
     "wiggle": "^0.0.17",
-    "wobble": "^1.5.1"
+    "wobble": "^1.5.1",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "astro": "^5.16.6",

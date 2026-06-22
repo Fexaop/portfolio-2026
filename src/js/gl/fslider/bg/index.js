@@ -5,7 +5,7 @@ import gsap from "~/js/gsap"
 import vertexShader from "./vertex.vert"
 import fragmentShader from "./fragment.frag"
 
-const RESOLUTION = 18
+const RESOLUTION = 32
 
 export class Bg extends Mesh {
   geometry = new PlaneGeometry(1, 1, RESOLUTION, RESOLUTION * 1.3)
@@ -46,8 +46,27 @@ export class Bg extends Mesh {
     this.material.uniforms.COL_3.value = new Color(lib.bg[2])
   }
 
+  // tell the shader the card's world width + the ring radius so it can bend the
+  // plane back along its width and hug the ring (a cylinder segment, not a flat
+  // card). `amount` > 1 over-curves slightly for a more obvious convex look.
+  setCurve(cardW, radius, amount = 1.25) {
+    this.material.uniforms.u_cardW.value = cardW
+    this.material.uniforms.u_radius.value = radius
+    this.material.uniforms.u_curve.value = amount
+  }
+
   set speed(val) {
     this.material.uniforms.u_a_speed.value = val
+  }
+
+  set opacity(val) {
+    this.material.uniforms.u_opacity.value = val
+  }
+
+  // signed "pull": how hard / which way the card is dragged. Drives the banner
+  // taper + curl in the vertex shader (one edge stretches out to a point).
+  setPull(val) {
+    this.material.uniforms.u_pull.value = val
   }
 
   set time(t) {
@@ -75,11 +94,24 @@ class Material extends RawShaderMaterial {
         u_a_speed: { value: 0 },
         u_a_center: { value: 0 },
         u_a_in: { value: 0 },
+        // ring curvature (card width + radius drive the cylinder bend)
+        u_cardW: { value: 1 },
+        u_radius: { value: 2 },
+        u_curve: { value: 1.25 },
+        // master amount for the fluid wave warp
+        u_wave: { value: 1 },
+        // signed banner pull (taper + curl toward one edge)
+        u_pull: { value: 0 },
+        // per-card fade for the hidden ends of the diagonal stream
+        u_opacity: { value: 1 },
       },
       side: DoubleSide,
       // wireframe: true,
-      transparent: false,
-      depthWrite: false,
+      // transparent so cards can fade out at the ends of the stream; depth still
+      // written so the big centre cards occlude the ones behind them
+      transparent: true,
+      depthWrite: true,
+      depthTest: true,
     })
   }
 

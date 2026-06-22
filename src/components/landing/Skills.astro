@@ -1,7 +1,11 @@
 ---
 import Section from "@c/Section.astro"
 import BouncySvg from "./BouncySvg.astro"
+import Svgg from "~/components/svg/Svgg.astro"
 import { SKILLS } from "~/content"
+
+// hand-drawn doodle per skill category: code brackets, infinity loop, cloud, cylinder
+const DOODLES = ["skill_backend", "skill_devops", "skill_cloud", "skill_db"]
 ---
 
 <Section
@@ -22,6 +26,12 @@ import { SKILLS } from "~/content"
           data-delay={ci * 0.1}
           class="flex flex-col gap-4"
         >
+          <div data-module="draw" class="h-[3.5rem] w-[8rem]">
+            <Svgg
+              name={DOODLES[ci % DOODLES.length]}
+              class="h-full w-auto"
+            />
+          </div>
           <h3 class="font-mono text-sm tracking-widest text-gray-400 uppercase">
             {cat.title}
           </h3>
