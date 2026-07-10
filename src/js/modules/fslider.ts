@@ -13,7 +13,6 @@ export class FSlider extends Core {
 
   #buttons: HTMLUListElement[]
   #progress: HTMLDivElement
-  #arrows: HTMLButtonElement[]
 
   constructor(element: HTMLElement) {
     super(element.querySelector('[data-slider="wrapper"]'), {
@@ -49,10 +48,6 @@ export class FSlider extends Core {
       '[data-slider="controls"]'
     ) as HTMLDivElement
 
-    this.#arrows = [
-      ...element.querySelector('[data-slider="arrows"]').children,
-    ] as HTMLButtonElement[]
-
     this.#caption = {
       name: element.querySelector("[data-caption-name]"),
       desc: element.querySelector("[data-caption-desc]"),
@@ -61,11 +56,6 @@ export class FSlider extends Core {
     // scroll drives the carousel, so the controls scroll the page to a card
     this.#buttons.forEach((button, i) => {
       button.onclick = () => this.scrollToIndex(i)
-    })
-
-    this.#arrows.forEach((arrowLi, i) => {
-      arrowLi.children[0].onclick = () =>
-        this.scrollToIndex(this.#current + (i === 0 ? -1 : 1))
     })
   }
 

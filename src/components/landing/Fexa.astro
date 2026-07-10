@@ -2,11 +2,20 @@
 import Section from "@c/Section.astro"
 import BouncySvg from "./BouncySvg.astro"
 import Loader from "./Loader.astro"
+import { PROFILE } from "~/content"
 ---
 
 <Section
   class="px-gx gap-lg relative flex min-h-[100svh] flex-col items-center justify-center text-center"
 >
+  <p
+    data-module="alpha"
+    data-delay="0.4"
+    class="font-mono text-[11px] tracking-[0.35em] text-gray-500 uppercase"
+  >
+    {PROFILE.location} · {PROFILE.availability}
+  </p>
+
   <div class="w-grids-6 md:w-grids-8">
     <BouncySvg name="fexa" fade />
   </div>
@@ -15,11 +24,22 @@ import Loader from "./Loader.astro"
     data-module="text"
     data-type="words"
     data-delay="0.8"
-    class="text-md md:w-grids-4 w-grids-4 leading-[1.3em] font-semibold text-balance"
+    class="text-md md:w-grids-5 w-grids-5 leading-[1.3em] font-semibold text-balance"
   >
-    Backend &amp; DevOps engineer building reliable, scalable systems and
-    automated infrastructure. — Gunit Kumar
+    {PROFILE.tagline} — {PROFILE.name}
   </p>
+
+  <ul
+    data-module="alpha"
+    data-delay="1.1"
+    class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-mono text-[11px] tracking-[0.2em] text-gray-500 uppercase"
+  >
+    <li>Backend systems</li>
+    <li aria-hidden="true" class="hidden text-white/30 sm:inline">·</li>
+    <li>Platform &amp; DevOps</li>
+    <li aria-hidden="true" class="hidden text-white/30 sm:inline">·</li>
+    <li>Cloud infrastructure</li>
+  </ul>
 
   <Loader />
 </Section>

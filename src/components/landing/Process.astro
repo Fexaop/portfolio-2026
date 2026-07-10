@@ -1,0 +1,62 @@
+---
+import Section from "@c/Section.astro"
+import { PROCESS } from "~/content"
+---
+
+<Section
+  id="process"
+  class="px-gx gap-xl relative flex flex-col items-center py-[6rem] md:py-[9rem]"
+>
+  <div
+    class="md:w-grids-10 flex w-full flex-col gap-3 md:flex-row md:items-end md:justify-between"
+  >
+    <div class="flex flex-col gap-2">
+      <p class="font-mono text-[11px] tracking-[0.3em] text-gray-500 uppercase">
+        Process
+      </p>
+      <h2
+        data-module="text"
+        data-type="words"
+        class="text-md md:text-xl max-w-[22ch] leading-[1.15em] font-semibold"
+      >
+        How work leaves the terminal.
+      </h2>
+    </div>
+    <p
+      data-module="text"
+      data-type="words"
+      class="max-w-[34ch] text-gray-400 md:text-right"
+    >
+      A repeatable path from blank repo to production — without the mystery
+      deploy at midnight.
+    </p>
+  </div>
+
+  <ol class="md:w-grids-10 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    {
+      PROCESS.map((p, i) => (
+        <li
+          data-module="alpha"
+          data-delay={i * 0.08}
+          class="process-step group relative flex flex-col gap-4 border border-white/15 bg-black/40 p-6 transition-colors duration-300 hover:border-white/35 hover:bg-black/55"
+        >
+          <span class="font-mono text-[11px] tracking-widest text-gray-500">
+            {p.step}
+          </span>
+          <h3 class="text-base font-semibold tracking-tight md:text-lg">
+            {p.title}
+          </h3>
+          <p class="text-[14px] leading-[1.55em] text-gray-300">{p.copy}</p>
+          {
+            i < PROCESS.length - 1 && (
+              <span
+                class="pointer-events-none absolute top-1/2 -right-2 hidden h-px w-3 bg-white/20 lg:block"
+                aria-hidden="true"
+              />
+            )
+          }
+        </li>
+      ))
+    }
+  </ol>
+</Section>

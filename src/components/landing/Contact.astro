@@ -67,15 +67,31 @@ import { PROFILE, LINKS } from "~/content"
     </div>
 
     <p
+      data-module="alpha"
+      class="font-mono text-[11px] tracking-[0.3em] text-gray-500 uppercase"
+    >
+      {PROFILE.availability}
+    </p>
+
+    <p
       data-module="text"
       data-type="words"
       class="text-md max-w-[44ch] leading-[1.4em] font-semibold text-balance"
     >
-      Open to backend & DevOps roles and freelance work — let&rsquo;s build
+      Open to backend &amp; DevOps roles and freelance work — let&rsquo;s build
       something reliable.
     </p>
 
-    <ul class="gap-lg text-lg flex font-semibold">
+    <p
+      data-module="text"
+      data-type="words"
+      class="max-w-[40ch] text-[14px] leading-[1.55em] text-gray-400"
+    >
+      Prefer a green terminal to a form? Scroll for the interactive TUI — or
+      reach out the old-fashioned way.
+    </p>
+
+    <ul class="gap-lg text-lg flex flex-wrap items-center justify-center font-semibold">
       <li data-hover="opacity">
         <a href={LINKS.github} target="_blank" rel="noopener">
           <HoverUl text="GitHub" />
@@ -86,10 +102,15 @@ import { PROFILE, LINKS } from "~/content"
           <HoverUl text="Email" />
         </a>
       </li>
+      <li data-hover="opacity">
+        <a href={LINKS.email}>
+          <HoverUl text={PROFILE.email} />
+        </a>
+      </li>
     </ul>
 
     <p class="pt-2xl font-mono text-sm tracking-widest text-gray-500 uppercase">
-      © 2026 {PROFILE.name}
+      © 2026 {PROFILE.name} · {PROFILE.location}
     </p>
   </div>
 </section>

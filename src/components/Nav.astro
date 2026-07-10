@@ -9,7 +9,9 @@ const BRAND = "FEXAOP"
 
 const links = [
   { label: "ABOUT", href: "/#about" },
+  { label: "SERVICES", href: "/#services" },
   { label: "WORK", href: "/#work" },
+  { label: "EXPERIENCE", href: "/#experience" },
   { label: "CONTACT", href: "/#contact" },
   {
     label: "GITHUB",
@@ -93,6 +95,14 @@ const links = [
     }
     100% {
       transform: translateY(0) rotate(0);
+    }
+  }
+
+  /* keep dense nav readable on small screens — hide mid links */
+  @media (max-width: 767px) {
+    ul li:nth-child(2),
+    ul li:nth-child(4) {
+      display: none;
     }
   }
 </style>

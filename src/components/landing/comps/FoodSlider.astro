@@ -95,24 +95,9 @@ const SLIDES = Array.from({ length: SLIDER_FOOD.length }, (_, i) => i)
     </p>
   </div>
 
-  <!-- bottom ui: prev arrow | dots | next arrow, inline and centred -->
-  <div data-no-cursor class="relative flex items-center justify-center gap-6">
-    <ul data-slider="arrows" class="contents">
-      <li data-module="alpha" data-delay=".5" class="order-1">
-        <button class="pointer-events-auto" aria-label="previous slide">
-          <div class="rotate-180">
-            <Svgg name="arrow-r" />
-          </div>
-        </button>
-      </li>
-      <li data-module="alpha" data-delay=".7" class="order-3">
-        <button class="pointer-events-auto" aria-label="next slide">
-          <Svgg name="arrow-r" />
-        </button>
-      </li>
-    </ul>
-
-    <div data-slider="controls" class="order-2 flex flex-col gap-2">
+  <!-- bottom ui: dots only (scroll / dots drive the carousel) -->
+  <div data-no-cursor class="relative flex items-center justify-center">
+    <div data-slider="controls" class="flex flex-col gap-2">
       <ul class="flex gap-[1rem]">
         {
           SLIDES.map((slide, i) => (

@@ -4,8 +4,18 @@ import FoodSlider from "./comps/FoodSlider.astro"
 ---
 
 <section id="work" class="gap-lg flex flex-col items-center py-[7rem] md:py-[10rem]">
-  <div class="px-gx w-grids-4 md:w-grids-5 md:pb-lg">
-    <BouncySvg name="work" />
+  <div class="px-gx md:w-grids-10 flex w-full flex-col items-center gap-3 text-center">
+    <div class="w-grids-4 md:w-grids-5">
+      <BouncySvg name="work" />
+    </div>
+    <p
+      data-module="text"
+      data-type="words"
+      class="max-w-[46ch] text-gray-400"
+    >
+      Selected builds — drag or scroll the carousel. Full write-ups and stacks
+      live in the archive below.
+    </p>
   </div>
 
   <FoodSlider />

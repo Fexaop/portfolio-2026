@@ -12,8 +12,18 @@ const DOODLES = ["skill_backend", "skill_devops", "skill_cloud", "skill_db"]
   id="skills"
   class="px-gx gap-xl flex flex-col items-center py-[7rem] md:py-[10rem]"
 >
-  <div class="w-grids-4 md:w-grids-6 md:pb-lg">
-    <BouncySvg name="skills" />
+  <div class="md:w-grids-10 flex w-full flex-col items-center gap-3 text-center">
+    <div class="w-grids-4 md:w-grids-6">
+      <BouncySvg name="skills" />
+    </div>
+    <p
+      data-module="text"
+      data-type="words"
+      class="max-w-[48ch] text-gray-400"
+    >
+      The stack I reach for when reliability matters — services, platforms, and
+      the data paths between them.
+    </p>
   </div>
 
   <div
@@ -24,7 +34,7 @@ const DOODLES = ["skill_backend", "skill_devops", "skill_cloud", "skill_db"]
         <div
           data-module="alpha"
           data-delay={ci * 0.1}
-          class="flex flex-col gap-4"
+          class="flex flex-col gap-4 rounded-sm border border-white/10 bg-black/30 p-5 transition-colors duration-300 hover:border-white/25"
         >
           <div data-module="draw" class="h-[3.5rem] w-[8rem]">
             <Svgg

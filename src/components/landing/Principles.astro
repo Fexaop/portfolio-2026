@@ -1,0 +1,40 @@
+---
+import Section from "@c/Section.astro"
+import { PRINCIPLES } from "~/content"
+---
+
+<Section
+  id="principles"
+  class="px-gx gap-xl relative flex flex-col items-center py-[6rem] md:py-[9rem]"
+>
+  <div class="md:w-grids-10 flex w-full flex-col gap-2">
+    <p class="font-mono text-[11px] tracking-[0.3em] text-gray-500 uppercase">
+      Principles
+    </p>
+    <h2
+      data-module="text"
+      data-type="words"
+      class="text-md md:text-xl max-w-[24ch] leading-[1.15em] font-semibold"
+    >
+      Defaults I refuse to negotiate away.
+    </h2>
+  </div>
+
+  <div class="md:w-grids-10 grid w-full grid-cols-1 gap-px bg-white/15 sm:grid-cols-2">
+    {
+      PRINCIPLES.map((p, i) => (
+        <article
+          data-module="alpha"
+          data-delay={i * 0.08}
+          class="flex flex-col gap-3 bg-black px-6 py-8 md:px-8 md:py-10"
+        >
+          <span class="font-mono text-[11px] tracking-widest text-gray-500">
+            0{i + 1}
+          </span>
+          <h3 class="text-base font-semibold md:text-lg">{p.title}</h3>
+          <p class="max-w-[40ch] leading-[1.55em] text-gray-300">{p.copy}</p>
+        </article>
+      ))
+    }
+  </div>
+</Section>
