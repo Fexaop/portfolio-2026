@@ -7,6 +7,10 @@ import HoverUl from "@c/HoverUl.astro"
 
 const BRAND = "FEXAOP"
 
+/** Must match the exact `id` in https://github.com/lugvitc/webring/blob/master/members.json */
+const WEBRING_ID = "fexa"
+const WEBRING = "https://webring-vit.vercel.app"
+
 const links = [
   { label: "ABOUT", href: "/#about" },
   { label: "SERVICES", href: "/#services" },
@@ -25,7 +29,7 @@ const links = [
 <nav
   data-module="nav"
   style="opacity: 0"
-  class="px-gx py-gy pointer-events-none fixed top-0 z-10 flex w-full justify-between md:items-start"
+  class="px-gx py-gy pointer-events-none fixed top-0 z-10 flex w-full items-start justify-between"
 >
   <a
     href="/"
@@ -48,27 +52,59 @@ const links = [
     </span>
   </a>
 
-  <ul class="flex flex-col items-end gap-2 md:flex-row md:gap-4">
-    {
-      links.map(link => (
-        <li class="relative text-[12px] leading-[1em]">
-          <a
-            href={link.href}
-            class="pointer-events-auto tracking-wide"
-            target={link.target}
-          >
-            {!link.icon && <HoverUl text={link.label} />}
-            {link.icon === "Github" && (
-              <figure data-hover="opacity">
-                <Github width="2rem" />
-                <figcaption class="sr-only">{link.label}</figcaption>
-              </figure>
-            )}
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+  <div class="flex flex-col items-end gap-3">
+    <ul class="nav-links flex flex-col items-end gap-2 md:flex-row md:gap-4">
+      {
+        links.map(link => (
+          <li class="relative text-[12px] leading-[1em]">
+            <a
+              href={link.href}
+              class="pointer-events-auto tracking-wide"
+              target={link.target}
+            >
+              {!link.icon && <HoverUl text={link.label} />}
+              {link.icon === "Github" && (
+                <figure data-hover="opacity">
+                  <Github width="2rem" />
+                  <figcaption class="sr-only">{link.label}</figcaption>
+                </figure>
+              )}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- VIT webring — id must match lugvitc/webring members.json -->
+    <div
+      class="webring pointer-events-auto flex items-stretch overflow-hidden rounded-full bg-black/70 shadow-[0_4px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
+      aria-label="VIT community webring"
+    >
+      <a
+        href={`${WEBRING}/redirect?from=${WEBRING_ID}&dir=prev`}
+        class="webring-link"
+        title="Previous site in the VIT webring"
+      >
+        <span aria-hidden="true">←</span>
+        <span class="webring-label">prev</span>
+      </a>
+      <a
+        href={`${WEBRING}/random`}
+        class="webring-link webring-random"
+        title="Random site in the VIT webring"
+      >
+        random
+      </a>
+      <a
+        href={`${WEBRING}/redirect?from=${WEBRING_ID}&dir=next`}
+        class="webring-link"
+        title="Next site in the VIT webring"
+      >
+        <span class="webring-label">next</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
 </nav>
 
 <style>
@@ -98,10 +134,47 @@ const links = [
     }
   }
 
+  .webring-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
+    padding: 0.55rem 0.9rem;
+    font-family: var(--font-mono), "Geist Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    white-space: nowrap;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .webring-link:hover {
+    background: #fff;
+    color: #000;
+  }
+
+  .webring-random {
+    border-inline: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
   /* keep dense nav readable on small screens — hide mid links */
   @media (max-width: 767px) {
-    ul li:nth-child(2),
-    ul li:nth-child(4) {
+    .nav-links li:nth-child(2),
+    .nav-links li:nth-child(4) {
+      display: none;
+    }
+
+    .webring-link {
+      padding: 0.5rem 0.7rem;
+      font-size: 0.72rem;
+    }
+
+    .webring-label {
       display: none;
     }
   }
