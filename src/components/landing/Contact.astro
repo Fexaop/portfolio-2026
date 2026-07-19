@@ -4,6 +4,8 @@ import HoverUl from "@c/HoverUl.astro"
 import Svgg from "~/components/svg/Svgg.astro"
 import WasmTerminal from "~/components/WasmTerminal.astro"
 import { PROFILE, LINKS } from "~/content"
+
+const WEBRING_ID = "fexa"
 ---
 
 <!-- Contact + terminal in one scroll: the hand-drawn terminal sits (small,
@@ -109,7 +111,32 @@ import { PROFILE, LINKS } from "~/content"
       </li>
     </ul>
 
-    <p class="pt-2xl font-mono text-sm tracking-widest text-gray-500 uppercase">
+    <!-- VIT webring — id must match members.json exactly -->
+    <nav
+      class="pt-xl flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-mono text-[11px] tracking-wide text-gray-400"
+      aria-label="VIT community webring"
+    >
+      <a
+        href={`https://webring-vit.vercel.app/redirect?from=${WEBRING_ID}&dir=prev`}
+        class="transition-colors hover:text-white"
+      >
+        ← previous site
+      </a>
+      <a
+        href="https://webring-vit.vercel.app/random"
+        class="transition-colors hover:text-white"
+      >
+        random site
+      </a>
+      <a
+        href={`https://webring-vit.vercel.app/redirect?from=${WEBRING_ID}&dir=next`}
+        class="transition-colors hover:text-white"
+      >
+        next site →
+      </a>
+    </nav>
+
+    <p class="pt-md font-mono text-sm tracking-widest text-gray-500 uppercase">
       © 2026 {PROFILE.name} · {PROFILE.location}
     </p>
   </div>
