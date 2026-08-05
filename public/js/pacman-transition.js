@@ -1,18 +1,20 @@
 /**
- * Pac-Man cross-site transition for pwnhub.in
+ * Pac-Man cross-site transition (portfolio @ pwnhub.in)
  *
- * to-blog (portfolio → blog):
- *   Pac-Man on the RIGHT of the ghost — eats yellow candy while red ghost CHASES from behind.
+ * portfolio → blog  (to-blog):
+ *   Pac-Man faces RIGHT, runs right, eats candy.
+ *   Red ghost is BEHIND (left) and closes in — hunting Pac-Man.
  *
- * to-portfolio (blog → portfolio):
- *   Pac-Man chases a blue frightened ghost ahead and "eats" it.
+ * blog → portfolio  (to-portfolio):
+ *   Pac-Man faces RIGHT, runs right.
+ *   Blue ghost is AHEAD (right); Pac-Man catches and "eats" it.
  *
- * Handoff: ?xsite=… query param (sessionStorage cannot cross origins).
+ * Handoff: ?xsite=… + cookie Domain=.pwnhub.in
  */
 (function () {
   const BLOG_URL = "https://blog.pwnhub.in";
   const XSITE_QUERY = "xsite";
-  const DURATION_MS = 2800;
+  const DURATION_MS = 2600;
 
   function withXSiteParam(url, direction) {
     try {
@@ -23,6 +25,15 @@
       const join = url.indexOf("?") >= 0 ? "&" : "?";
       return url + join + XSITE_QUERY + "=" + encodeURIComponent(direction);
     }
+  }
+
+  function setHandoffCookie(direction) {
+    try {
+      document.cookie =
+        "pwnhub_xsite=" +
+        encodeURIComponent(direction) +
+        "; Domain=.pwnhub.in; Path=/; Max-Age=90; SameSite=Lax";
+    } catch (_) {}
   }
 
   function playPacmanTransition(url, direction) {
@@ -36,7 +47,7 @@
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cssW = Math.min(window.innerWidth, 960);
-    const cssH = Math.min(Math.round(window.innerHeight * 0.45), 340);
+    const cssH = Math.min(Math.round(window.innerHeight * 0.48), 360);
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
@@ -52,224 +63,201 @@
     const W = cssW;
     const H = cssH;
     const cy = H * 0.5;
-    const R = Math.max(16, Math.min(26, W * 0.032)); // pac radius
+    const R = Math.max(18, Math.min(28, W * 0.034));
 
-    // to-blog = hunted (ghost behind). to-portfolio = chase (ghost ahead, blue)
-    const isChase = direction === "to-portfolio";
+    // true = blog→portfolio (chase ghost). false = portfolio→blog (get hunted)
+    const chaseGhost = direction === "to-portfolio";
 
-    // Lane from left margin → right margin
-    const laneL = W * 0.08;
-    const laneR = W * 0.92;
+    const laneL = W * 0.07;
+    const laneR = W * 0.93;
+    const pathLen = laneR - laneL - R * 3;
 
-    // Candy dots along the full lane (never pre-eaten)
+    // Candy — full path, bright yellow
     const candy = [];
-    const candyCount = 18;
-    for (let i = 0; i < candyCount; i++) {
+    const n = 20;
+    for (let i = 0; i < n; i++) {
       candy.push({
-        x: laneL + R * 2 + ((laneR - laneL - R * 4) * i) / (candyCount - 1),
+        x: laneL + R * 2.2 + (pathLen * i) / (n - 1),
         eaten: false,
-        power: i === 0 || i === candyCount - 1,
+        power: i === 0 || i === n - 1,
       });
     }
 
     const t0 = performance.now();
-    let done = false;
+    let finished = false;
 
-    const finish = function () {
-      if (done) return;
-      done = true;
-      try {
-        document.cookie =
-          "pwnhub_xsite=" +
-          encodeURIComponent(direction) +
-          "; Domain=.pwnhub.in; Path=/; Max-Age=90; SameSite=Lax";
-      } catch (_) {}
+    function finish() {
+      if (finished) return;
+      finished = true;
+      setHandoffCookie(direction);
       window.location.replace(withXSiteParam(url, direction));
-    };
-    const failSafe = window.setTimeout(finish, DURATION_MS + 700);
+    }
+    const failSafe = window.setTimeout(finish, DURATION_MS + 500);
 
-    /** Pac-Man facing +dx (right). mouth 0..1 */
     function drawPac(x, y, mouth) {
-      const open = 0.18 + mouth * 0.32; // opening in π units
+      // Classic Pac-Man facing RIGHT
+      const a = (0.2 + mouth * 0.35) * Math.PI;
       ctx.save();
       ctx.translate(x, y);
-      ctx.fillStyle = "#ffe14f";
+      ctx.fillStyle = "#ffcc00";
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      // Canvas: 0 rad = right. Mouth opens on the right side.
-      ctx.arc(0, 0, R, open * Math.PI, (2 - open) * Math.PI, false);
+      ctx.arc(0, 0, R, a, -a, false);
       ctx.closePath();
       ctx.fill();
-      // eye on top
       ctx.fillStyle = "#111";
       ctx.beginPath();
-      ctx.arc(R * 0.05, -R * 0.45, R * 0.14, 0, Math.PI * 2);
+      ctx.arc(R * 0.1, -R * 0.42, R * 0.13, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    /** Classic ghost. lookDir: -1 left, +1 right */
-    function drawGhost(x, y, color, lookDir, frightened) {
-      const gw = R * 1.85;
-      const gh = R * 2.0;
+    function drawGhost(x, y, bodyColor, lookRight, frightened) {
+      const gw = R * 1.9;
+      const gh = R * 2.05;
       ctx.save();
       ctx.translate(x, y);
 
-      // body
-      ctx.fillStyle = frightened ? "#2121ff" : color;
+      ctx.fillStyle = frightened ? "#2121ff" : bodyColor;
       ctx.beginPath();
-      ctx.arc(0, -gh * 0.15, gw / 2, Math.PI, 0, false);
-      ctx.lineTo(gw / 2, gh * 0.4);
-      // scalloped bottom (3 waves)
-      const waves = 3;
-      for (let i = waves; i >= 0; i--) {
-        const t = i / waves;
-        const sx = gw / 2 - gw * t;
-        const sy = gh * 0.4 + (i % 2 === 0 ? 0 : -gh * 0.16);
+      ctx.arc(0, -gh * 0.12, gw / 2, Math.PI, 0, false);
+      ctx.lineTo(gw / 2, gh * 0.42);
+      for (let i = 4; i >= 0; i--) {
+        const sx = gw / 2 - (gw * i) / 4;
+        const sy = gh * 0.42 + (i % 2 === 0 ? 0 : -gh * 0.15);
         ctx.lineTo(sx, sy);
       }
       ctx.closePath();
       ctx.fill();
 
-      // white eyes
-      const ey = -gh * 0.2;
-      const ex = gw * 0.2;
-      ctx.fillStyle = "#ffffff";
+      // eyes
+      const ey = -gh * 0.18;
+      const ex = gw * 0.22;
+      ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(-ex, ey, gw * 0.15, gw * 0.18, 0, 0, Math.PI * 2);
-      ctx.ellipse(ex, ey, gw * 0.15, gw * 0.18, 0, 0, Math.PI * 2);
+      ctx.ellipse(-ex, ey, gw * 0.16, gw * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(ex, ey, gw * 0.16, gw * 0.2, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // pupils look in direction
-      ctx.fillStyle = frightened ? "#ffffff" : "#2121de";
-      const px = lookDir * gw * 0.06;
+      ctx.fillStyle = frightened ? "#fff" : "#00f";
+      const look = lookRight ? gw * 0.05 : -gw * 0.05;
       ctx.beginPath();
-      ctx.arc(-ex + px, ey, gw * 0.08, 0, Math.PI * 2);
-      ctx.arc(ex + px, ey, gw * 0.08, 0, Math.PI * 2);
+      ctx.arc(-ex + look, ey, gw * 0.08, 0, Math.PI * 2);
+      ctx.arc(ex + look, ey, gw * 0.08, 0, Math.PI * 2);
       ctx.fill();
 
       if (frightened) {
         ctx.strokeStyle = "#ffb8ff";
-        ctx.lineWidth = 1.6;
-        ctx.lineCap = "round";
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(-gw * 0.3, gh * 0.08);
-        ctx.quadraticCurveTo(-gw * 0.1, gh * 0.2, 0, gh * 0.08);
-        ctx.quadraticCurveTo(gw * 0.1, -gh * 0.02, gw * 0.3, gh * 0.08);
+        ctx.moveTo(-gw * 0.28, gh * 0.1);
+        ctx.quadraticCurveTo(0, gh * 0.22, gw * 0.28, gh * 0.1);
         ctx.stroke();
       }
-
       ctx.restore();
     }
 
-    function drawGhostEyes(x, y) {
+    function drawEyes(x, y) {
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(x - 8, y - 3, 6, 7, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + 8, y - 3, 6, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - 9, y, 6, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 9, y, 6, 7, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#2121de";
+      ctx.fillStyle = "#00f";
       ctx.beginPath();
-      ctx.arc(x - 6, y - 3, 2.5, 0, Math.PI * 2);
-      ctx.arc(x + 10, y - 3, 2.5, 0, Math.PI * 2);
+      ctx.arc(x - 7, y, 2.5, 0, Math.PI * 2);
+      ctx.arc(x + 11, y, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
     function frame(now) {
       const t = Math.min(1, (now - t0) / DURATION_MS);
-      const e = t * t * (3 - 2 * t); // smoothstep
+      const e = t * t * (3 - 2 * t);
 
-      // clear
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
 
-      // maze corridor
-      const railY1 = cy - R * 2.6;
-      const railY2 = cy + R * 2.6;
+      // corridor
+      const top = cy - R * 2.7;
+      const bot = cy + R * 2.7;
       ctx.strokeStyle = "#2121de";
-      ctx.lineWidth = 3.5;
-      ctx.strokeRect(laneL - 8, railY1 - 4, laneR - laneL + 16, railY2 - railY1 + 8);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(laneL - 10, top - 6, laneR - laneL + 20, bot - top + 12);
       ctx.strokeStyle = "#1919a6";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(laneL, railY1);
-      ctx.lineTo(laneR, railY1);
-      ctx.moveTo(laneL, railY2);
-      ctx.lineTo(laneR, railY2);
+      ctx.moveTo(laneL, top);
+      ctx.lineTo(laneR, top);
+      ctx.moveTo(laneL, bot);
+      ctx.lineTo(laneR, bot);
       ctx.stroke();
 
-      // --- positions ---
-      // Pac-Man always moves left → right
-      const pacX = laneL + R * 1.5 + (laneR - laneL - R * 3) * e;
+      // Pac always runs L→R
+      const pacX = laneL + R * 1.6 + pathLen * e;
+      const mouth = (Math.sin(now / 60) + 1) / 2;
 
+      // Ghost placement
       let ghostX;
-      let ghostEaten = false;
-      let ghostFrightened = false;
-      let ghostLook = 1; // +1 right, -1 left
+      let frightened = false;
+      let eaten = false;
 
-      if (isChase) {
-        // Ghost flees ahead (to the RIGHT of Pac-Man)
-        ghostFrightened = t > 0.28;
-        ghostLook = 1;
-        const lead = R * 4.5 * (1 - e * 0.75) + R * 1.2;
-        ghostX = pacX + lead;
-        if (t > 0.8) ghostX = pacX + R * 0.7;
-        if (t > 0.88) ghostEaten = true;
+      if (chaseGhost) {
+        // Ghost AHEAD (to the right of Pac-Man) — Pac-Man chases
+        frightened = t > 0.25;
+        const lead = R * 5 * (1 - e * 0.7) + R * 1.4;
+        ghostX = Math.min(laneR - R, pacX + lead);
+        if (t > 0.78) ghostX = pacX + R * 0.85;
+        if (t > 0.88) eaten = true;
       } else {
-        // Ghost HUNTS from BEHIND (to the LEFT of Pac-Man) — Pac-Man is ahead
-        ghostLook = 1; // looking right toward Pac-Man
-        // start further back, close the gap over time but stay behind
-        const gap = R * 5.5 - e * R * 2.2; // always > R*3
-        ghostX = pacX - Math.max(gap, R * 3.2);
+        // Ghost BEHIND (to the left of Pac-Man) — hunts Pac-Man
+        // Stay clearly behind the whole time, close the gap slowly
+        const minGap = R * 2.8; // never overlap / never get ahead
+        const startGap = R * 6.5;
+        const gap = startGap - e * (startGap - minGap);
+        ghostX = pacX - gap;
+        // clamp so ghost stays on screen
+        if (ghostX < laneL + R) ghostX = laneL + R;
       }
 
-      // candy — eat only when Pac-Man's mouth reaches the dot
-      const mouthFront = pacX + R * 0.55;
+      // Candy (draw under characters)
+      const biteX = pacX + R * 0.35;
       for (let i = 0; i < candy.length; i++) {
         const c = candy[i];
-        if (!c.eaten && mouthFront >= c.x) c.eaten = true;
+        // only eat dots Pac-Man has reached; leave dots behind ghost alone
+        if (!c.eaten && biteX >= c.x) c.eaten = true;
         if (c.eaten) continue;
-        ctx.fillStyle = c.power ? "#ffb897" : "#ffb8ae";
+        // don't draw candy already "behind" pac if somehow still marked
+        ctx.fillStyle = c.power ? "#ffb897" : "#ffcc66";
         ctx.beginPath();
-        ctx.arc(c.x, cy, c.power ? R * 0.38 : R * 0.2, 0, Math.PI * 2);
+        ctx.arc(c.x, cy, c.power ? R * 0.42 : R * 0.22, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // draw ghost under Pac-Man
-      if (!ghostEaten) {
-        drawGhost(
-          ghostX,
-          cy,
-          "#ff0000",
-          ghostLook,
-          ghostFrightened,
-        );
+      // Ghost then Pac (Pac on top)
+      if (!eaten) {
+        // hunting: look right (toward Pac). fleeing: look right (running away)
+        drawGhost(ghostX, cy, "#ff0000", true, frightened);
       } else {
-        // eyes flee upward-right after being eaten
-        drawGhostEyes(ghostX + (t - 0.88) * W * 0.15, cy - (t - 0.88) * 40);
+        drawEyes(ghostX + (t - 0.88) * 100, cy - 8);
       }
 
-      // Pac-Man chomp
-      const mouth = (Math.sin(now / 65) + 1) / 2;
       drawPac(pacX, cy, mouth);
 
-      // label
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.font = "13px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.font = "13px ui-monospace, Menlo, monospace";
       ctx.textAlign = "center";
       ctx.fillText(
-        isChase
-          ? "→  pwnhub.in  (chase the ghost)"
-          : "→  blog.pwnhub.in  (ghost is hunting you)",
+        chaseGhost
+          ? "→ portfolio  ·  Pac-Man eats the ghost"
+          : "→ blog  ·  Pac-Man flees, ghost hunts from behind",
         W / 2,
-        H - 16,
+        H - 14,
       );
 
-      if (t < 1) {
-        requestAnimationFrame(frame);
-      } else {
+      if (t < 1) requestAnimationFrame(frame);
+      else {
         window.clearTimeout(failSafe);
-        window.setTimeout(finish, 80);
+        window.setTimeout(finish, 60);
       }
     }
 
@@ -281,13 +269,15 @@
       el.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
-        const direction = el.getAttribute("data-xsite-nav") || "to-blog";
-        const href = el.getAttribute("href") || BLOG_URL;
-        playPacmanTransition(href, direction);
+        playPacmanTransition(
+          el.getAttribute("href") || BLOG_URL,
+          el.getAttribute("data-xsite-nav") || "to-blog",
+        );
       });
     });
   }
 
+  /** Arrival from blog: ?xsite=to-portfolio or cookie — NO long black wait */
   function handleArrivalFromBlog() {
     var params;
     try {
@@ -295,78 +285,94 @@
     } catch (_) {
       return;
     }
+
     var dir = params.get(XSITE_QUERY);
-    if (dir !== "to-portfolio" && dir !== "from-blog") return;
+    var cookieHit = false;
+    try {
+      cookieHit = /(?:^|;\s*)pwnhub_xsite=to-portfolio(?:;|$)/.test(
+        document.cookie,
+      );
+    } catch (_) {}
+
+    if (dir !== "to-portfolio" && dir !== "from-blog" && !cookieHit) {
+      // Also respect class already set by head inline script
+      if (!document.documentElement.classList.contains("xsite-from-blog")) {
+        return;
+      }
+    }
+
+    document.documentElement.classList.add("xsite-from-blog", "xsite-arrived");
 
     try {
       params.delete(XSITE_QUERY);
       var q = params.toString();
-      var clean =
-        window.location.pathname + (q ? "?" + q : "") + window.location.hash;
-      window.history.replaceState(null, "", clean || "/");
+      history.replaceState(
+        null,
+        "",
+        location.pathname + (q ? "?" + q : "") + location.hash,
+      );
+    } catch (_) {}
+    try {
+      document.cookie =
+        "pwnhub_xsite=; Domain=.pwnhub.in; Path=/; Max-Age=0; SameSite=Lax";
+      document.cookie = "pwnhub_xsite=; Path=/; Max-Age=0; SameSite=Lax";
     } catch (_) {}
 
-    document.documentElement.classList.add("xsite-from-blog", "xsite-arrived");
-
     function killLoader() {
-      document.querySelectorAll("[data-module='loader']").forEach(function (el) {
-        el.remove();
-      });
+      document
+        .querySelectorAll("[data-module='loader'], .site-loader")
+        .forEach(function (el) {
+          el.remove();
+        });
       try {
-        if (window.app && window.app.loader && window.app.loader.timeouts) {
-          window.app.loader.timeouts.forEach(clearTimeout);
+        if (window.app && window.app.loader) {
+          (window.app.loader.timeouts || []).forEach(clearTimeout);
           window.app.loader.timeouts = [];
+          window.app.loader.circle = null;
         }
-        if (window.app && window.app.loader) window.app.loader.circle = null;
       } catch (_) {}
     }
-
     killLoader();
     var mo = new MutationObserver(killLoader);
     mo.observe(document.documentElement, { childList: true, subtree: true });
-    window.setTimeout(function () {
+    setTimeout(function () {
       mo.disconnect();
-    }, 10000);
+    }, 6000);
 
     var lifted = false;
     function lift() {
       if (lifted) return;
       lifted = true;
       document.documentElement.classList.add("xsite-ready");
-      window.setTimeout(function () {
+      setTimeout(function () {
         document.documentElement.classList.remove(
           "xsite-from-blog",
           "xsite-arrived",
           "xsite-ready",
         );
-      }, 700);
+      }, 500);
     }
 
-    var tries = 0;
-    var poll = window.setInterval(function () {
-      tries++;
+    // Lift FAST — don't wait forever on WebGL
+    // Prefer START if it comes quickly; otherwise max ~1s black
+    var startAt = performance.now();
+    var poll = setInterval(function () {
+      var waited = performance.now() - startAt;
       try {
-        if (window.hey && window.hey.START) {
-          window.clearInterval(poll);
+        if (window.hey && window.hey.START && waited > 200) {
+          clearInterval(poll);
           lift();
           return;
         }
       } catch (_) {}
-      if (
-        document.body &&
-        document.body.classList.contains("started") &&
-        tries > 15
-      ) {
-        window.clearInterval(poll);
-        lift();
-        return;
-      }
-      if (tries > 55) {
-        window.clearInterval(poll);
+      if (waited > 900) {
+        clearInterval(poll);
         lift();
       }
-    }, 80);
-    window.setTimeout(lift, 5000);
+    }, 50);
+
+    // Absolute max 1.2s black
+    setTimeout(lift, 1200);
   }
 
   handleArrivalFromBlog();

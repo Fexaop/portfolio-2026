@@ -49,7 +49,7 @@ const { class: className, nav, isHome = false } = Astro.props
       })()
     </script>
     <style is:inline>
-      /* Black veil = continuation of Pac-Man screen */
+      /* Short black handoff only — lifts via .xsite-ready within ~1s */
       html.xsite-from-blog body::before {
         content: "";
         position: fixed;
@@ -58,12 +58,12 @@ const { class: className, nav, isHome = false } = Astro.props
         background: #000;
         pointer-events: none;
         opacity: 1;
-        transition: opacity 0.5s ease;
+        transition: opacity 0.35s ease;
       }
       html.xsite-from-blog.xsite-ready body::before {
         opacity: 0;
+        visibility: hidden;
       }
-      /* Kill every loader surface */
       html.xsite-from-blog [data-module="loader"],
       html.xsite-arrived [data-module="loader"],
       html.xsite-from-blog .site-loader,
@@ -74,6 +74,31 @@ const { class: className, nav, isHome = false } = Astro.props
         pointer-events: none !important;
       }
     </style>
+    <!-- Force-lift black veil quickly even if JS modules fail -->
+    <script is:inline>
+      ;(function () {
+        if (!document.documentElement.classList.contains("xsite-from-blog"))
+          return
+        function lift() {
+          document.documentElement.classList.add("xsite-ready")
+          setTimeout(function () {
+            document.documentElement.classList.remove(
+              "xsite-from-blog",
+              "xsite-arrived",
+              "xsite-ready",
+            )
+          }, 400)
+        }
+        // Max ~0.9s black, then show portfolio
+        setTimeout(lift, 900)
+        document.addEventListener("DOMContentLoaded", function () {
+          setTimeout(lift, 400)
+        })
+        window.addEventListener("load", function () {
+          setTimeout(lift, 100)
+        })
+      })()
+    </script>
 
     <link rel="sitemap" href="/sitemap-index.xml" />
 

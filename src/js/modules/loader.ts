@@ -33,11 +33,11 @@ export class Loader {
         /* gone */
       }
 
-      // Lift black veil when WebGL is ready
+      // Lift black veil quickly — don't wait on slow WebGL
       const onStart = () => this.#liftVeil()
       hey.on("START", onStart)
       if (hey.START) this.#liftVeil()
-      else window.setTimeout(() => this.#liftVeil(), 4000)
+      window.setTimeout(() => this.#liftVeil(), 800)
       return
     }
 
