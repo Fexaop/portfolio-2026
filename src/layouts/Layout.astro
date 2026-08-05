@@ -53,6 +53,23 @@ const { class: className, nav, isHome = false } = Astro.props
 
     <!-- {isHome && <script>history.scrollRestoration = "manual"</script>} -->
     {!isHome && <link href="/code.css" rel="stylesheet" />}
+
+    <!-- Cross-site Pac-Man: skip loader when arriving from blog -->
+    <script is:inline>
+      try {
+        var d = sessionStorage.getItem("pwnhub-xsite")
+        if (d === "to-blog" || d === "to-portfolio") {
+          document.documentElement.classList.add("xsite-arrived")
+        }
+      } catch (e) {}
+    </script>
+    <style is:inline>
+      html.xsite-arrived [data-module="loader"] {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
   </head>
   <body>
     <FerrofluidBg />
@@ -67,6 +84,8 @@ const { class: className, nav, isHome = false } = Astro.props
     <Grid />
 
     <Script />
+
+    <script src="/js/pacman-transition.js" defer></script>
 
     <script>
       ;(() => {

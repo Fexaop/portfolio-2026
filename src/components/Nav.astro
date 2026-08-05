@@ -11,12 +11,19 @@ const BRAND = "FEXAOP"
 const WEBRING_ID = "fexa"
 const WEBRING = "https://webring-vit.vercel.app"
 
+const BLOG_URL = "https://blog.pwnhub.in"
+
 const links = [
   { label: "ABOUT", href: "/#about" },
   { label: "SERVICES", href: "/#services" },
   { label: "WORK", href: "/#work" },
   { label: "EXPERIENCE", href: "/#experience" },
   { label: "CONTACT", href: "/#contact" },
+  {
+    label: "BLOG",
+    href: BLOG_URL,
+    xsite: "to-blog",
+  },
   {
     label: "GITHUB",
     href: LINKS.github,
@@ -59,8 +66,13 @@ const links = [
           <li class="relative text-[12px] leading-[1em]">
             <a
               href={link.href}
-              class="pointer-events-auto tracking-wide"
+              class:list={[
+                "pointer-events-auto tracking-wide",
+                link.xsite && "xsite-blog-link",
+              ]}
               target={link.target}
+              data-xsite-nav={link.xsite}
+              rel={link.xsite ? "noopener" : undefined}
             >
               {!link.icon && <HoverUl text={link.label} />}
               {link.icon === "Github" && (
@@ -160,6 +172,11 @@ const links = [
   .webring-random {
     border-inline: 1px solid rgba(255, 255, 255, 0.35);
     background: rgba(255, 255, 255, 0.08);
+  }
+
+  .xsite-blog-link {
+    color: #ffe14f;
+    font-weight: 700;
   }
 
   /* keep dense nav readable on small screens — hide mid links */
