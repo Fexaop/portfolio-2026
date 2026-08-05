@@ -42,6 +42,15 @@
 
     /* squares */
   }
+
+  /* Never paint the circle loader when arriving via Pac-Man from the blog */
+  :global(html.xsite-from-blog) [data-module="loader"],
+  :global(html.xsite-arrived) [data-module="loader"] {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 </style>
 
 <script>
@@ -52,26 +61,46 @@
     },
   }
 
-  const circ = 282.7433388230814
+  const skipFromBlog = (() => {
+    try {
+      return (
+        document.documentElement.classList.contains("xsite-from-blog") ||
+        document.documentElement.classList.contains("xsite-arrived") ||
+        sessionStorage.getItem("pwnhub-skip-loader") === "1" ||
+        sessionStorage.getItem("pwnhub-xsite") === "to-portfolio"
+      )
+    } catch {
+      return false
+    }
+  })()
+
   const loader = document.querySelector("[data-module='loader']")
-  window.app.loader.circle = loader.querySelectorAll("circle")[1]
-  loader.classList.add("init")
 
-  const advanceLoader = () => {
-    let progress = 1
+  if (skipFromBlog) {
+    // Remove loader entirely — Pac-Man black veil covers boot instead
+    loader?.remove()
+    window.app.loader.circle = null
+  } else if (loader) {
+    const circ = 282.7433388230814
+    window.app.loader.circle = loader.querySelectorAll("circle")[1]
+    loader.classList.add("init")
 
-    const updateProgress = () => {
-      const remaining = progress
-      progress -= remaining * 0.12 * (Math.random() + 0.05)
-      window.app.loader.circle.style.strokeDashoffset = `${circ * progress}px`
-      window.app.loader.timeouts.push(setTimeout(updateProgress, 1800))
+    const advanceLoader = () => {
+      let progress = 1
+
+      const updateProgress = () => {
+        if (!window.app.loader.circle) return
+        const remaining = progress
+        progress -= remaining * 0.12 * (Math.random() + 0.05)
+        window.app.loader.circle.style.strokeDashoffset = `${circ * progress}px`
+        window.app.loader.timeouts.push(setTimeout(updateProgress, 1800))
+      }
+
+      window.app.loader.timeouts.push(
+        setTimeout(updateProgress, 900 + Math.random() * 100)
+      )
     }
 
-    // Start the progress
-    window.app.loader.timeouts.push(
-      setTimeout(updateProgress, 900 + Math.random() * 100)
-    )
+    advanceLoader()
   }
-
-  advanceLoader()
 </script>

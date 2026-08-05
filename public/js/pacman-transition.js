@@ -1,10 +1,12 @@
 /**
  * Pac-Man cross-site transition (portfolio ↔ blog).
- * Portfolio → blog: Pac-Man eats pellets, hunted by ghost.
- * Blog → portfolio: reverse — Pac-Man chases & eats ghost.
+ * - to-blog: Pac-Man runs RIGHT eating pellets, ghost hunts from behind
+ * - to-portfolio: Pac-Man runs RIGHT chasing & eating the ghost
+ * Always faces the direction of travel (right).
  */
 (function () {
   const XSITE_KEY = "pwnhub-xsite";
+  const SKIP_LOADER_KEY = "pwnhub-skip-loader";
   const BLOG_URL = "https://blog.pwnhub.in";
   const DURATION_MS = 2400;
 
@@ -33,17 +35,15 @@
     const r = 18 * scale;
 
     const reverse = direction === "to-portfolio";
-    const pacStart = reverse ? w * 0.15 : w * 0.12;
-    const pacEnd = reverse ? w * 0.78 : w * 0.72;
-    const ghostOffset = reverse ? 90 * scale : -100 * scale;
+    const pacStart = w * 0.12;
+    const pacEnd = w * 0.78;
 
     const pellets = [];
-    const pelletStart = w * 0.18;
-    const pelletEnd = w * 0.82;
-    const pelletCount = 14;
-    for (let i = 0; i < pelletCount; i++) {
+    const pelletStart = w * 0.2;
+    const pelletEnd = w * 0.85;
+    for (let i = 0; i < 14; i++) {
       pellets.push({
-        x: pelletStart + ((pelletEnd - pelletStart) * i) / (pelletCount - 1),
+        x: pelletStart + ((pelletEnd - pelletStart) * i) / 13,
         eaten: false,
       });
     }
@@ -55,29 +55,29 @@
       if (navigated) return;
       navigated = true;
       try {
+        // Always face-right eating animation; store direction for arrival soft-land
         sessionStorage.setItem(XSITE_KEY, direction);
+        if (direction === "to-blog") {
+          sessionStorage.removeItem(SKIP_LOADER_KEY);
+        }
       } catch (_) {}
       window.location.href = url;
     };
 
     const failSafe = window.setTimeout(go, DURATION_MS + 800);
 
-    function drawPac(x, y, facingRight, mouth) {
-      const open = 0.25 + mouth * 0.35;
+    function drawPac(x, y, mouth) {
+      const open = 0.22 + mouth * 0.38;
       ctx.fillStyle = "#ffe14f";
       ctx.beginPath();
-      if (facingRight) {
-        ctx.arc(x, y, r, open * Math.PI, (2 - open) * Math.PI, false);
-      } else {
-        ctx.arc(x, y, r, (1 + open) * Math.PI, (1 - open) * Math.PI, false);
-      }
+      // Face RIGHT
+      ctx.arc(x, y, r, open * Math.PI, (2 - open) * Math.PI, false);
       ctx.lineTo(x, y);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = "#111";
-      const ex = facingRight ? x + r * 0.15 : x - r * 0.15;
       ctx.beginPath();
-      ctx.arc(ex, y - r * 0.35, r * 0.12, 0, Math.PI * 2);
+      ctx.arc(x + r * 0.12, y - r * 0.38, r * 0.12, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -103,8 +103,8 @@
       ctx.fill();
       ctx.fillStyle = frightened ? "#fff" : "#2121de";
       ctx.beginPath();
-      ctx.arc(x - gw * 0.15, eyeY, gw * 0.06, 0, Math.PI * 2);
-      ctx.arc(x + gw * 0.21, eyeY, gw * 0.06, 0, Math.PI * 2);
+      ctx.arc(x - gw * 0.12, eyeY, gw * 0.06, 0, Math.PI * 2);
+      ctx.arc(x + gw * 0.24, eyeY, gw * 0.06, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -125,11 +125,10 @@
       ctx.stroke();
 
       const pacX = pacStart + (pacEnd - pacStart) * e;
-      const facingRight = !reverse;
       const mouth = (Math.sin(now / 80) + 1) / 2;
 
       for (const p of pellets) {
-        if (!p.eaten && Math.abs(pacX - p.x) < r * 1.2) p.eaten = true;
+        if (!p.eaten && pacX + r * 0.5 >= p.x) p.eaten = true;
         if (!p.eaten) {
           ctx.fillStyle = "#ffb8ae";
           ctx.beginPath();
@@ -141,14 +140,14 @@
       let ghostX;
       if (reverse) {
         ghostX =
-          pacStart + 70 * scale + (pacEnd - pacStart) * Math.min(1, e * 1.05);
-        if (t > 0.82) ghostX = pacX + r * 0.3;
+          pacStart + 100 * scale + (pacEnd - pacStart) * Math.min(1, e * 0.92);
+        if (t > 0.78) ghostX = pacX + r * 0.55;
       } else {
-        ghostX = pacX - 95 * scale + e * 28 * scale;
+        ghostX = pacX - 100 * scale + e * 32 * scale;
       }
 
-      const frightened = reverse && t > 0.55;
-      if (!(reverse && t > 0.9)) {
+      const frightened = reverse && t > 0.5;
+      if (!(reverse && t > 0.88)) {
         drawGhost(ghostX, cy, "#ff0000", frightened);
       } else {
         ctx.fillStyle = "#fff";
@@ -158,19 +157,19 @@
         ctx.fill();
         ctx.fillStyle = "#2121de";
         ctx.beginPath();
-        ctx.arc(ghostX - 5, cy - 4, 2 * scale, 0, Math.PI * 2);
-        ctx.arc(ghostX + 7, cy - 4, 2 * scale, 0, Math.PI * 2);
+        ctx.arc(ghostX - 4, cy - 4, 2 * scale, 0, Math.PI * 2);
+        ctx.arc(ghostX + 8, cy - 4, 2 * scale, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      drawPac(pacX, cy, facingRight, mouth);
+      drawPac(pacX, cy, mouth);
 
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.font = `${12 * scale}px ui-monospace, monospace`;
       ctx.textAlign = "center";
       ctx.fillText(
         reverse
-          ? "pwnhub.in  ←  chasing the stack"
+          ? "pwnhub.in  →  chasing the stack"
           : "blog.pwnhub.in  →  writing mode",
         w / 2,
         h - 16 * scale,
@@ -192,30 +191,93 @@
         e.preventDefault();
         const direction = el.getAttribute("data-xsite-nav") || "to-blog";
         const url = el.getAttribute("href") || BLOG_URL;
+        // Leaving portfolio for blog: mark so blog can soft-land
+        try {
+          if (direction === "to-blog") {
+            sessionStorage.setItem(XSITE_KEY, "to-blog");
+          }
+        } catch (_) {}
         playPacmanTransition(url, direction);
       });
     });
   }
 
-  // Skip site loader when arriving via Pac-Man
-  try {
-    const dir = sessionStorage.getItem(XSITE_KEY);
-    if (dir === "to-blog" || dir === "to-portfolio") {
-      sessionStorage.removeItem(XSITE_KEY);
-      document.documentElement.classList.add("xsite-arrived");
-      // remove loader ASAP if present
-      const killLoader = () => {
-        const loader = document.querySelector("[data-module='loader']");
-        if (loader) loader.remove();
-      };
-      killLoader();
-      document.addEventListener("DOMContentLoaded", killLoader);
-      window.addEventListener("load", () => {
-        killLoader();
-        document.documentElement.classList.remove("xsite-arrived");
+  // ── Arrival on portfolio from blog: kill loader, keep black veil ─────────
+  function handleArrivalFromBlog() {
+    let fromBlog = false;
+    try {
+      fromBlog =
+        sessionStorage.getItem(SKIP_LOADER_KEY) === "1" ||
+        sessionStorage.getItem(XSITE_KEY) === "to-portfolio";
+      if (fromBlog) {
+        sessionStorage.removeItem(SKIP_LOADER_KEY);
+        // keep XSITE_KEY until veil lifts (optional)
+        sessionStorage.removeItem(XSITE_KEY);
+      }
+    } catch (_) {}
+
+    if (!fromBlog) return;
+
+    document.documentElement.classList.add("xsite-from-blog", "xsite-arrived");
+
+    const killLoader = () => {
+      document.querySelectorAll("[data-module='loader']").forEach((el) => {
+        el.remove();
       });
-    }
-  } catch (_) {}
+      // stop any scheduled progress ticks
+      try {
+        if (window.app && window.app.loader && window.app.loader.timeouts) {
+          window.app.loader.timeouts.forEach(clearTimeout);
+          window.app.loader.timeouts = [];
+        }
+      } catch (_) {}
+    };
+
+    killLoader();
+    // Keep killing if React/Astro re-hydrates or module re-adds it
+    const mo = new MutationObserver(killLoader);
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+    window.setTimeout(() => mo.disconnect(), 8000);
+
+    // Lift black veil when site is ready (START) or after fallback timeout
+    const lift = () => {
+      document.documentElement.classList.add("xsite-ready");
+      window.setTimeout(() => {
+        document.documentElement.classList.remove(
+          "xsite-from-blog",
+          "xsite-arrived",
+          "xsite-ready",
+        );
+      }, 700);
+    };
+
+    // Poll for hey.START if available
+    let tries = 0;
+    const poll = window.setInterval(() => {
+      tries++;
+      try {
+        if (window.hey && window.hey.START) {
+          window.clearInterval(poll);
+          lift();
+          return;
+        }
+      } catch (_) {}
+      // Also lift if body has started class (app boot)
+      if (document.body && document.body.classList.contains("started") && tries > 8) {
+        window.clearInterval(poll);
+        lift();
+      }
+      if (tries > 40) {
+        window.clearInterval(poll);
+        lift();
+      }
+    }, 100);
+
+    // Absolute fallback
+    window.setTimeout(lift, 4500);
+  }
+
+  handleArrivalFromBlog();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", wire);

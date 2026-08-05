@@ -54,19 +54,46 @@ const { class: className, nav, isHome = false } = Astro.props
     <!-- {isHome && <script>history.scrollRestoration = "manual"</script>} -->
     {!isHome && <link href="/code.css" rel="stylesheet" />}
 
-    <!-- Cross-site Pac-Man: skip loader when arriving from blog -->
+    <!--
+      Cross-site Pac-Man from blog.pwnhub.in:
+      - Flag before first paint
+      - Black veil continues Pac-Man black (no circle loader)
+      - Veil lifts when html.xsite-ready (WebGL START)
+    -->
     <script is:inline>
       try {
-        var d = sessionStorage.getItem("pwnhub-xsite")
-        if (d === "to-blog" || d === "to-portfolio") {
-          document.documentElement.classList.add("xsite-arrived")
+        var skip =
+          sessionStorage.getItem("pwnhub-skip-loader") === "1" ||
+          sessionStorage.getItem("pwnhub-xsite") === "to-portfolio"
+        if (skip) {
+          document.documentElement.classList.add(
+            "xsite-from-blog",
+            "xsite-arrived",
+          )
         }
       } catch (e) {}
     </script>
     <style is:inline>
+      /* Fullscreen black continuation of Pac-Man overlay */
+      html.xsite-from-blog body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 2147483645;
+        background: #000;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.55s ease;
+      }
+      html.xsite-from-blog.xsite-ready body::before {
+        opacity: 0;
+      }
+      /* Hard-kill circle loader whenever we arrived from the blog */
+      html.xsite-from-blog [data-module="loader"],
       html.xsite-arrived [data-module="loader"] {
         display: none !important;
         opacity: 0 !important;
+        visibility: hidden !important;
         pointer-events: none !important;
       }
     </style>
