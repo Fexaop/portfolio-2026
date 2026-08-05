@@ -51,30 +51,28 @@ const { class: className, nav, isHome = false } = Astro.props
     />
     <meta name="twitter:image" content="/og.png" />
 
-    <!-- {isHome && <script>history.scrollRestoration = "manual"</script>} -->
     {!isHome && <link href="/code.css" rel="stylesheet" />}
 
     <!--
-      Cross-site Pac-Man from blog.pwnhub.in:
-      - Flag before first paint
-      - Black veil continues Pac-Man black (no circle loader)
-      - Veil lifts when html.xsite-ready (WebGL START)
+      Cross-site from blog: ?xsite=to-portfolio
+      MUST run before body paints — query param (not sessionStorage; different origins).
     -->
     <script is:inline>
-      try {
-        var skip =
-          sessionStorage.getItem("pwnhub-skip-loader") === "1" ||
-          sessionStorage.getItem("pwnhub-xsite") === "to-portfolio"
-        if (skip) {
-          document.documentElement.classList.add(
-            "xsite-from-blog",
-            "xsite-arrived",
-          )
-        }
-      } catch (e) {}
+      ;(function () {
+        try {
+          var p = new URLSearchParams(location.search)
+          var d = p.get("xsite")
+          if (d === "to-portfolio" || d === "from-blog") {
+            document.documentElement.classList.add(
+              "xsite-from-blog",
+              "xsite-arrived",
+            )
+          }
+        } catch (e) {}
+      })()
     </script>
     <style is:inline>
-      /* Fullscreen black continuation of Pac-Man overlay */
+      /* Black veil continues Pac-Man black across navigation */
       html.xsite-from-blog body::before {
         content: "";
         position: fixed;
@@ -88,13 +86,16 @@ const { class: className, nav, isHome = false } = Astro.props
       html.xsite-from-blog.xsite-ready body::before {
         opacity: 0;
       }
-      /* Hard-kill circle loader whenever we arrived from the blog */
+      /* Never show circle loader when arriving from blog */
       html.xsite-from-blog [data-module="loader"],
       html.xsite-arrived [data-module="loader"] {
         display: none !important;
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
       }
     </style>
   </head>
@@ -112,7 +113,8 @@ const { class: className, nav, isHome = false } = Astro.props
 
     <Script />
 
-    <script src="/js/pacman-transition.js" defer></script>
+    <!-- Pac-Man transitions + arrival cleanup (must load early enough for ?xsite=) -->
+    <script src="/js/pacman-transition.js"></script>
 
     <script>
       ;(() => {
