@@ -277,41 +277,42 @@
     });
   }
 
-  /** Arrival from blog: ?xsite=to-portfolio or cookie — NO long black wait */
+  /**
+   * Arrival from blog: skip circle loader only.
+   * NO black veil — that was stuck covering the whole site.
+   */
   function handleArrivalFromBlog() {
-    var params;
-    try {
-      params = new URLSearchParams(window.location.search);
-    } catch (_) {
-      return;
+    var fromBlog =
+      document.documentElement.classList.contains("xsite-from-blog") ||
+      document.documentElement.classList.contains("xsite-arrived");
+
+    if (!fromBlog) {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var dir = params.get(XSITE_QUERY);
+        var cookieHit = /(?:^|;\s*)pwnhub_xsite=to-portfolio(?:;|$)/.test(
+          document.cookie,
+        );
+        fromBlog =
+          dir === "to-portfolio" || dir === "from-blog" || cookieHit;
+        if (fromBlog) {
+          document.documentElement.classList.add(
+            "xsite-from-blog",
+            "xsite-arrived",
+          );
+          params.delete(XSITE_QUERY);
+          var q = params.toString();
+          history.replaceState(
+            null,
+            "",
+            location.pathname + (q ? "?" + q : "") + location.hash,
+          );
+        }
+      } catch (_) {}
     }
 
-    var dir = params.get(XSITE_QUERY);
-    var cookieHit = false;
-    try {
-      cookieHit = /(?:^|;\s*)pwnhub_xsite=to-portfolio(?:;|$)/.test(
-        document.cookie,
-      );
-    } catch (_) {}
+    if (!fromBlog) return;
 
-    if (dir !== "to-portfolio" && dir !== "from-blog" && !cookieHit) {
-      // Also respect class already set by head inline script
-      if (!document.documentElement.classList.contains("xsite-from-blog")) {
-        return;
-      }
-    }
-
-    document.documentElement.classList.add("xsite-from-blog", "xsite-arrived");
-
-    try {
-      params.delete(XSITE_QUERY);
-      var q = params.toString();
-      history.replaceState(
-        null,
-        "",
-        location.pathname + (q ? "?" + q : "") + location.hash,
-      );
-    } catch (_) {}
     try {
       document.cookie =
         "pwnhub_xsite=; Domain=.pwnhub.in; Path=/; Max-Age=0; SameSite=Lax";
@@ -332,47 +333,19 @@
         }
       } catch (_) {}
     }
+
     killLoader();
     var mo = new MutationObserver(killLoader);
     mo.observe(document.documentElement, { childList: true, subtree: true });
     setTimeout(function () {
       mo.disconnect();
-    }, 6000);
-
-    var lifted = false;
-    function lift() {
-      if (lifted) return;
-      lifted = true;
-      document.documentElement.classList.add("xsite-ready");
-      setTimeout(function () {
-        document.documentElement.classList.remove(
-          "xsite-from-blog",
-          "xsite-arrived",
-          "xsite-ready",
-        );
-      }, 500);
-    }
-
-    // Lift FAST — don't wait forever on WebGL
-    // Prefer START if it comes quickly; otherwise max ~1s black
-    var startAt = performance.now();
-    var poll = setInterval(function () {
-      var waited = performance.now() - startAt;
-      try {
-        if (window.hey && window.hey.START && waited > 200) {
-          clearInterval(poll);
-          lift();
-          return;
-        }
-      } catch (_) {}
-      if (waited > 900) {
-        clearInterval(poll);
-        lift();
-      }
-    }, 50);
-
-    // Absolute max 1.2s black
-    setTimeout(lift, 1200);
+      // Drop flags so CSS rules don't linger
+      document.documentElement.classList.remove(
+        "xsite-from-blog",
+        "xsite-arrived",
+        "xsite-ready",
+      );
+    }, 4000);
   }
 
   handleArrivalFromBlog();

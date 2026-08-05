@@ -17,54 +17,41 @@ export class Loader {
   circle: SVGElement | null
   svg: HTMLElement | null = null
   #skip: boolean
-  #lifted = false
 
   constructor(element: HTMLDivElement) {
     this.element = element
     this.#skip = arrivedFromBlog()
 
     if (this.#skip) {
+      // Coming from blog: delete loader, show site immediately (no black veil)
       this.circle = null
       try {
         this.element.hidden = true
         this.element.style.display = "none"
         this.element.remove()
       } catch {
-        /* gone */
+        /* already gone */
       }
-
-      // Lift black veil quickly — don't wait on slow WebGL
-      const onStart = () => this.#liftVeil()
-      hey.on("START", onStart)
-      if (hey.START) this.#liftVeil()
-      window.setTimeout(() => this.#liftVeil(), 800)
+      // Clear flags so a later refresh is normal
+      try {
+        document.documentElement.classList.remove(
+          "xsite-from-blog",
+          "xsite-arrived",
+          "xsite-ready",
+        )
+      } catch {
+        /* ignore */
+      }
       return
     }
 
-    // Normal visit — element should already be un-hidden by Loader.astro script
     this.circle = window.app?.loader?.circle ?? null
     this.svg = (this.circle?.parentElement as HTMLElement) ?? null
     hey.on("START", () => this.animateIn())
   }
 
-  #liftVeil = () => {
-    if (this.#lifted) return
-    this.#lifted = true
-    document.documentElement.classList.add("xsite-ready")
-    window.setTimeout(() => {
-      document.documentElement.classList.remove(
-        "xsite-from-blog",
-        "xsite-arrived",
-        "xsite-ready",
-      )
-    }, 650)
-  }
-
   animateIn = () => {
-    if (this.#skip) {
-      this.#liftVeil()
-      return
-    }
+    if (this.#skip) return
 
     try {
       window.app?.loader?.timeouts?.forEach((t: number) => clearTimeout(t))

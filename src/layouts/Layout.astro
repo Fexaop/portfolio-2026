@@ -49,21 +49,10 @@ const { class: className, nav, isHome = false } = Astro.props
       })()
     </script>
     <style is:inline>
-      /* Short black handoff only — lifts via .xsite-ready within ~1s */
-      html.xsite-from-blog body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: 2147483645;
-        background: #000;
-        pointer-events: none;
-        opacity: 1;
-        transition: opacity 0.35s ease;
-      }
-      html.xsite-from-blog.xsite-ready body::before {
-        opacity: 0;
-        visibility: hidden;
-      }
+      /*
+        NO black veil — it stuck and covered the whole site.
+        Only hide the circle loader when arriving from the blog.
+      */
       html.xsite-from-blog [data-module="loader"],
       html.xsite-arrived [data-module="loader"],
       html.xsite-from-blog .site-loader,
@@ -72,33 +61,11 @@ const { class: className, nav, isHome = false } = Astro.props
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
       }
     </style>
-    <!-- Force-lift black veil quickly even if JS modules fail -->
-    <script is:inline>
-      ;(function () {
-        if (!document.documentElement.classList.contains("xsite-from-blog"))
-          return
-        function lift() {
-          document.documentElement.classList.add("xsite-ready")
-          setTimeout(function () {
-            document.documentElement.classList.remove(
-              "xsite-from-blog",
-              "xsite-arrived",
-              "xsite-ready",
-            )
-          }, 400)
-        }
-        // Max ~0.9s black, then show portfolio
-        setTimeout(lift, 900)
-        document.addEventListener("DOMContentLoaded", function () {
-          setTimeout(lift, 400)
-        })
-        window.addEventListener("load", function () {
-          setTimeout(lift, 100)
-        })
-      })()
-    </script>
 
     <link rel="sitemap" href="/sitemap-index.xml" />
 
