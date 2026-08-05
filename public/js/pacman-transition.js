@@ -112,61 +112,104 @@
       ctx.restore();
     }
 
+    /** Classic arcade ghost: dome + sides + 3 bottom waves + eyes */
     function drawGhost(x, y, bodyColor, lookRight, frightened) {
-      const gw = R * 1.9;
-      const gh = R * 2.05;
+      const w = R * 1.75;
+      const h = R * 2.15;
+      const left = -w / 2;
+      const right = w / 2;
+      const top = -h * 0.48;
+      const skirt = h * 0.38;
+      const domeR = w / 2;
+
       ctx.save();
       ctx.translate(x, y);
 
       ctx.fillStyle = frightened ? "#2121ff" : bodyColor;
       ctx.beginPath();
-      ctx.arc(0, -gh * 0.12, gw / 2, Math.PI, 0, false);
-      ctx.lineTo(gw / 2, gh * 0.42);
-      for (let i = 4; i >= 0; i--) {
-        const sx = gw / 2 - (gw * i) / 4;
-        const sy = gh * 0.42 + (i % 2 === 0 ? 0 : -gh * 0.15);
-        ctx.lineTo(sx, sy);
+      ctx.moveTo(left, skirt);
+      ctx.lineTo(left, top + domeR);
+      ctx.arc(0, top + domeR, domeR, Math.PI, 0, false);
+      ctx.lineTo(right, skirt);
+      // 3 bottom scallops (right → left)
+      var waves = 3;
+      var waveW = w / waves;
+      for (var i = 0; i < waves; i++) {
+        var x0 = right - i * waveW;
+        var x1 = x0 - waveW / 2;
+        var x2 = x0 - waveW;
+        ctx.quadraticCurveTo(
+          x0 - waveW * 0.25,
+          skirt + waveW * 0.55,
+          x1,
+          skirt,
+        );
+        ctx.quadraticCurveTo(
+          x2 + waveW * 0.25,
+          skirt - waveW * 0.15,
+          x2,
+          skirt,
+        );
       }
       ctx.closePath();
       ctx.fill();
 
-      // eyes
-      const ey = -gh * 0.18;
-      const ex = gw * 0.22;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.ellipse(-ex, ey, gw * 0.16, gw * 0.2, 0, 0, Math.PI * 2);
-      ctx.ellipse(ex, ey, gw * 0.16, gw * 0.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = frightened ? "#fff" : "#00f";
-      const look = lookRight ? gw * 0.05 : -gw * 0.05;
-      ctx.beginPath();
-      ctx.arc(-ex + look, ey, gw * 0.08, 0, Math.PI * 2);
-      ctx.arc(ex + look, ey, gw * 0.08, 0, Math.PI * 2);
-      ctx.fill();
+      var eyeY = -h * 0.12;
+      var eyeX = w * 0.22;
+      var eyeRx = w * 0.14;
+      var eyeRy = w * 0.17;
 
       if (frightened) {
-        ctx.strokeStyle = "#ffb8ff";
-        ctx.lineWidth = 2;
+        ctx.fillStyle = "#fff";
         ctx.beginPath();
-        ctx.moveTo(-gw * 0.28, gh * 0.1);
-        ctx.quadraticCurveTo(0, gh * 0.22, gw * 0.28, gh * 0.1);
+        ctx.arc(-eyeX, eyeY, eyeRx * 0.55, 0, Math.PI * 2);
+        ctx.arc(eyeX, eyeY, eyeRx * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#2121ff";
+        ctx.beginPath();
+        ctx.arc(-eyeX, eyeY, eyeRx * 0.28, 0, Math.PI * 2);
+        ctx.arc(eyeX, eyeY, eyeRx * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = Math.max(1.5, R * 0.1);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        var my = h * 0.12;
+        ctx.moveTo(-w * 0.28, my);
+        ctx.lineTo(-w * 0.14, my + R * 0.12);
+        ctx.lineTo(0, my);
+        ctx.lineTo(w * 0.14, my + R * 0.12);
+        ctx.lineTo(w * 0.28, my);
         ctx.stroke();
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.ellipse(-eyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX, eyeY, eyeRx, eyeRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#2121de";
+        var look = lookRight ? eyeRx * 0.35 : -eyeRx * 0.35;
+        var pupilR = eyeRx * 0.48;
+        ctx.beginPath();
+        ctx.arc(-eyeX + look, eyeY, pupilR, 0, Math.PI * 2);
+        ctx.arc(eyeX + look, eyeY, pupilR, 0, Math.PI * 2);
+        ctx.fill();
       }
+
       ctx.restore();
     }
 
     function drawEyes(x, y) {
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(x - 9, y, 6, 7, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + 9, y, 6, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - 8, y, 5.5, 6.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 8, y, 5.5, 6.5, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#00f";
+      ctx.fillStyle = "#2121de";
       ctx.beginPath();
-      ctx.arc(x - 7, y, 2.5, 0, Math.PI * 2);
-      ctx.arc(x + 11, y, 2.5, 0, Math.PI * 2);
+      ctx.arc(x - 6, y, 2.4, 0, Math.PI * 2);
+      ctx.arc(x + 10, y, 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
 
