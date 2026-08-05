@@ -11,6 +11,70 @@ const { class: className, nav, isHome = false } = Astro.props
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- FIRST: detect blog→portfolio handoff before any paint -->
+    <script is:inline>
+      ;(function () {
+        try {
+          var fromBlog = false
+          var p = new URLSearchParams(location.search)
+          var q = p.get("xsite")
+          if (q === "to-portfolio" || q === "from-blog") fromBlog = true
+          if (
+            !fromBlog &&
+            /(?:^|;\s*)pwnhub_xsite=to-portfolio(?:;|$)/.test(document.cookie)
+          ) {
+            fromBlog = true
+          }
+          if (fromBlog) {
+            document.documentElement.classList.add(
+              "xsite-from-blog",
+              "xsite-arrived",
+            )
+            // strip query ASAP so it doesn't linger
+            if (q) {
+              p.delete("xsite")
+              var rest = p.toString()
+              history.replaceState(
+                null,
+                "",
+                location.pathname + (rest ? "?" + rest : "") + location.hash,
+              )
+            }
+            // clear cookie so a refresh shows normal loader
+            document.cookie =
+              "pwnhub_xsite=; Domain=.pwnhub.in; Path=/; Max-Age=0; SameSite=Lax"
+            document.cookie = "pwnhub_xsite=; Path=/; Max-Age=0; SameSite=Lax"
+          }
+        } catch (e) {}
+      })()
+    </script>
+    <style is:inline>
+      /* Black veil = continuation of Pac-Man screen */
+      html.xsite-from-blog body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 2147483645;
+        background: #000;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+      }
+      html.xsite-from-blog.xsite-ready body::before {
+        opacity: 0;
+      }
+      /* Kill every loader surface */
+      html.xsite-from-blog [data-module="loader"],
+      html.xsite-arrived [data-module="loader"],
+      html.xsite-from-blog .site-loader,
+      html.xsite-arrived .site-loader {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    </style>
+
     <link rel="sitemap" href="/sitemap-index.xml" />
 
     <meta charset="UTF-8" />
@@ -26,7 +90,6 @@ const { class: className, nav, isHome = false } = Astro.props
       content="FEXA — Gunit Kumar. Backend & DevOps engineer building reliable, scalable systems, platforms, and automated infrastructure. Open to roles & freelance."
     />
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="FEXA" />
     <meta
@@ -39,7 +102,6 @@ const { class: className, nav, isHome = false } = Astro.props
     />
     <meta property="og:image" content="/og.png" />
 
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
@@ -52,52 +114,6 @@ const { class: className, nav, isHome = false } = Astro.props
     <meta name="twitter:image" content="/og.png" />
 
     {!isHome && <link href="/code.css" rel="stylesheet" />}
-
-    <!--
-      Cross-site from blog: ?xsite=to-portfolio
-      MUST run before body paints — query param (not sessionStorage; different origins).
-    -->
-    <script is:inline>
-      ;(function () {
-        try {
-          var p = new URLSearchParams(location.search)
-          var d = p.get("xsite")
-          if (d === "to-portfolio" || d === "from-blog") {
-            document.documentElement.classList.add(
-              "xsite-from-blog",
-              "xsite-arrived",
-            )
-          }
-        } catch (e) {}
-      })()
-    </script>
-    <style is:inline>
-      /* Black veil continues Pac-Man black across navigation */
-      html.xsite-from-blog body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: 2147483645;
-        background: #000;
-        pointer-events: none;
-        opacity: 1;
-        transition: opacity 0.55s ease;
-      }
-      html.xsite-from-blog.xsite-ready body::before {
-        opacity: 0;
-      }
-      /* Never show circle loader when arriving from blog */
-      html.xsite-from-blog [data-module="loader"],
-      html.xsite-arrived [data-module="loader"] {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
-      }
-    </style>
   </head>
   <body>
     <FerrofluidBg />
@@ -113,7 +129,6 @@ const { class: className, nav, isHome = false } = Astro.props
 
     <Script />
 
-    <!-- Pac-Man transitions + arrival cleanup (must load early enough for ?xsite=) -->
     <script src="/js/pacman-transition.js"></script>
 
     <script>

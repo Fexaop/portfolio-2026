@@ -3,16 +3,10 @@ import gsap from "../gsap"
 
 function arrivedFromBlog(): boolean {
   try {
-    if (
+    return (
       document.documentElement.classList.contains("xsite-from-blog") ||
       document.documentElement.classList.contains("xsite-arrived")
-    ) {
-      return true
-    }
-    // Query may already be stripped — class is the source of truth after head script
-    const p = new URLSearchParams(window.location.search)
-    const d = p.get("xsite")
-    return d === "to-portfolio" || d === "from-blog"
+    )
   } catch {
     return false
   }
@@ -22,7 +16,6 @@ export class Loader {
   element: HTMLDivElement
   circle: SVGElement | null
   svg: HTMLElement | null = null
-  #onLoad: (() => void) | null = null
   #skip: boolean
   #lifted = false
 
@@ -33,27 +26,25 @@ export class Loader {
     if (this.#skip) {
       this.circle = null
       try {
+        this.element.hidden = true
         this.element.style.display = "none"
         this.element.remove()
       } catch {
-        /* already gone */
+        /* gone */
       }
 
-      this.#onLoad = () => this.#liftVeil()
-      hey.on("START", this.#onLoad)
-
-      if (hey.START) {
-        this.#liftVeil()
-      } else {
-        window.setTimeout(() => this.#liftVeil(), 4500)
-      }
+      // Lift black veil when WebGL is ready
+      const onStart = () => this.#liftVeil()
+      hey.on("START", onStart)
+      if (hey.START) this.#liftVeil()
+      else window.setTimeout(() => this.#liftVeil(), 4000)
       return
     }
 
+    // Normal visit — element should already be un-hidden by Loader.astro script
     this.circle = window.app?.loader?.circle ?? null
     this.svg = (this.circle?.parentElement as HTMLElement) ?? null
-    this.#onLoad = () => this.animateIn()
-    hey.on("START", this.#onLoad)
+    hey.on("START", () => this.animateIn())
   }
 
   #liftVeil = () => {
@@ -66,7 +57,7 @@ export class Loader {
         "xsite-arrived",
         "xsite-ready",
       )
-    }, 700)
+    }, 650)
   }
 
   animateIn = () => {
@@ -76,9 +67,7 @@ export class Loader {
     }
 
     try {
-      window.app?.loader?.timeouts?.forEach((timeout: number) =>
-        clearTimeout(timeout),
-      )
+      window.app?.loader?.timeouts?.forEach((t: number) => clearTimeout(t))
     } catch {
       /* ignore */
     }
@@ -107,9 +96,7 @@ export class Loader {
       duration: 0.2,
       delay: 0.4,
       ease: "expo.out",
-      onComplete: () => {
-        this.element.remove()
-      },
+      onComplete: () => this.element.remove(),
     })
   }
 }

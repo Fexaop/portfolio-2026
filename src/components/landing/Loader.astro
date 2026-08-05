@@ -1,13 +1,17 @@
 ---
-
+/**
+ * Site boot loader (circle).
+ * IMPORTANT: hidden by default. Only shown when JS confirms a normal visit.
+ * Arrivals from blog.pwnhub.in (?xsite=to-portfolio or cookie) never enable it.
+ */
 ---
 
-{
-  /* Hidden entirely when arriving from blog via ?xsite=to-portfolio */
-}
 <div
   data-module="loader"
-  class="absolute inset-0 z-50 flex items-center justify-center"
+  data-loader-root
+  class="site-loader absolute inset-0 z-50 flex items-center justify-center"
+  hidden
+  aria-hidden="true"
 >
   <div class="absolute inset-0 flex items-center justify-center">
     <svg data-percentage viewBox="0 0 100 100" class="absolute w-[3em]">
@@ -32,32 +36,36 @@
 </div>
 
 <style>
-  [data-module="loader"] {
-    --anim: 2s;
+  .site-loader {
     pointer-events: none;
-    [data-percentage] > circle:nth-child(2) {
-      stroke-dasharray: 282.7433388230814;
-      stroke-dashoffset: calc(282.7433388230814 * 1);
-      transition: stroke-dashoffset 1.2s ease-in-out 0.5s;
-    }
   }
 
+  .site-loader[hidden] {
+    display: none !important;
+  }
+
+  .site-loader:not([hidden]) [data-percentage] > circle:nth-child(2) {
+    stroke-dasharray: 282.7433388230814;
+    stroke-dashoffset: calc(282.7433388230814 * 1);
+    transition: stroke-dashoffset 1.2s ease-in-out 0.5s;
+  }
+
+  /* Belt-and-suspenders when arriving from blog */
+  :global(html.xsite-from-blog) .site-loader,
+  :global(html.xsite-arrived) .site-loader,
   :global(html.xsite-from-blog) [data-module="loader"],
   :global(html.xsite-arrived) [data-module="loader"] {
     display: none !important;
-    opacity: 0 !important;
     visibility: hidden !important;
-    pointer-events: none !important;
+    opacity: 0 !important;
   }
 </style>
 
 <script>
-  window.app = window.app || {
-    loader: { circle: null, timeouts: [] },
-  }
+  window.app = window.app || {}
   window.app.loader = window.app.loader || { circle: null, timeouts: [] }
 
-  function shouldSkipLoader() {
+  function fromBlog(): boolean {
     try {
       if (
         document.documentElement.classList.contains("xsite-from-blog") ||
@@ -65,36 +73,44 @@
       ) {
         return true
       }
-      var p = new URLSearchParams(location.search)
-      var d = p.get("xsite")
-      return d === "to-portfolio" || d === "from-blog"
+      // query
+      const p = new URLSearchParams(location.search)
+      const q = p.get("xsite")
+      if (q === "to-portfolio" || q === "from-blog") return true
+      // cookie Domain=.pwnhub.in
+      if (/(?:^|;\s*)pwnhub_xsite=to-portfolio(?:;|$)/.test(document.cookie)) {
+        return true
+      }
     } catch {
-      return false
+      /* ignore */
     }
+    return false
   }
 
-  const loader = document.querySelector("[data-module='loader']")
+  const root = document.querySelector("[data-loader-root]")
 
-  if (shouldSkipLoader()) {
-    loader?.remove()
+  if (fromBlog()) {
+    // Never show — Pac-Man black veil covers boot
+    root?.remove()
     window.app.loader.circle = null
     window.app.loader.timeouts = []
-  } else if (loader) {
+  } else if (root) {
+    // Normal visit: enable loader UI
+    root.hidden = false
+    root.removeAttribute("aria-hidden")
     const circ = 282.7433388230814
-    window.app.loader.circle = loader.querySelectorAll("circle")[1]
-    loader.classList.add("init")
+    window.app.loader.circle = root.querySelectorAll("circle")[1]
+    root.classList.add("init")
 
     let progress = 1
-    const updateProgress = () => {
+    const tick = () => {
       if (!window.app.loader.circle) return
-      const remaining = progress
-      progress -= remaining * 0.12 * (Math.random() + 0.05)
+      progress -= progress * 0.12 * (Math.random() + 0.05)
       window.app.loader.circle.style.strokeDashoffset = `${circ * progress}px`
-      window.app.loader.timeouts.push(setTimeout(updateProgress, 1800))
+      window.app.loader.timeouts.push(setTimeout(tick, 1800))
     }
-
     window.app.loader.timeouts.push(
-      setTimeout(updateProgress, 900 + Math.random() * 100)
+      setTimeout(tick, 900 + Math.random() * 100),
     )
   }
 </script>

@@ -1,11 +1,18 @@
 /**
- * Pac-Man cross-site transition for pwnhub.in (portfolio).
- * Cross-origin handoff uses ?xsite=… query params (not sessionStorage).
+ * Pac-Man cross-site transition for pwnhub.in
+ *
+ * to-blog (portfolio → blog):
+ *   Pac-Man on the RIGHT of the ghost — eats yellow candy while red ghost CHASES from behind.
+ *
+ * to-portfolio (blog → portfolio):
+ *   Pac-Man chases a blue frightened ghost ahead and "eats" it.
+ *
+ * Handoff: ?xsite=… query param (sessionStorage cannot cross origins).
  */
 (function () {
   const BLOG_URL = "https://blog.pwnhub.in";
   const XSITE_QUERY = "xsite";
-  const DURATION_MS = 2600;
+  const DURATION_MS = 2800;
 
   function withXSiteParam(url, direction) {
     try {
@@ -28,182 +35,241 @@
       "position:fixed;inset:0;z-index:2147483646;background:#000;display:flex;align-items:center;justify-content:center;cursor:wait";
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const cssW = Math.min(window.innerWidth, 920);
-    const cssH = Math.min(Math.round(window.innerHeight * 0.42), 320);
+    const cssW = Math.min(window.innerWidth, 960);
+    const cssH = Math.min(Math.round(window.innerHeight * 0.45), 340);
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
-    canvas.style.cssText = "width:" + cssW + "px;height:" + cssH + "px";
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
     overlay.appendChild(canvas);
     document.body.appendChild(overlay);
     document.documentElement.style.overflow = "hidden";
 
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const w = cssW;
-    const h = cssH;
-    const cy = h * 0.48;
-    const r = Math.max(14, Math.min(22, w * 0.028));
 
-    const chase = direction === "to-portfolio";
-    const pacStart = w * 0.1;
-    const pacEnd = w * 0.82;
+    const W = cssW;
+    const H = cssH;
+    const cy = H * 0.5;
+    const R = Math.max(16, Math.min(26, W * 0.032)); // pac radius
 
-    const pellets = [];
-    for (let i = 0; i < 16; i++) {
-      pellets.push({ x: w * 0.18 + (w * 0.7 * i) / 15, eaten: false });
+    // to-blog = hunted (ghost behind). to-portfolio = chase (ghost ahead, blue)
+    const isChase = direction === "to-portfolio";
+
+    // Lane from left margin → right margin
+    const laneL = W * 0.08;
+    const laneR = W * 0.92;
+
+    // Candy dots along the full lane (never pre-eaten)
+    const candy = [];
+    const candyCount = 18;
+    for (let i = 0; i < candyCount; i++) {
+      candy.push({
+        x: laneL + R * 2 + ((laneR - laneL - R * 4) * i) / (candyCount - 1),
+        eaten: false,
+        power: i === 0 || i === candyCount - 1,
+      });
     }
 
     const t0 = performance.now();
-    let navigated = false;
+    let done = false;
 
-    const go = function () {
-      if (navigated) return;
-      navigated = true;
-      window.location.href = withXSiteParam(url, direction);
+    const finish = function () {
+      if (done) return;
+      done = true;
+      try {
+        document.cookie =
+          "pwnhub_xsite=" +
+          encodeURIComponent(direction) +
+          "; Domain=.pwnhub.in; Path=/; Max-Age=90; SameSite=Lax";
+      } catch (_) {}
+      window.location.replace(withXSiteParam(url, direction));
     };
+    const failSafe = window.setTimeout(finish, DURATION_MS + 700);
 
-    const failSafe = window.setTimeout(go, DURATION_MS + 600);
-
+    /** Pac-Man facing +dx (right). mouth 0..1 */
     function drawPac(x, y, mouth) {
-      const a = 0.2 + mouth * 0.35;
+      const open = 0.18 + mouth * 0.32; // opening in π units
       ctx.save();
       ctx.translate(x, y);
       ctx.fillStyle = "#ffe14f";
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      // Face RIGHT
-      ctx.arc(0, 0, r, a * Math.PI, (2 - a) * Math.PI, false);
+      // Canvas: 0 rad = right. Mouth opens on the right side.
+      ctx.arc(0, 0, R, open * Math.PI, (2 - open) * Math.PI, false);
       ctx.closePath();
       ctx.fill();
+      // eye on top
       ctx.fillStyle = "#111";
       ctx.beginPath();
-      ctx.arc(r * 0.08, -r * 0.42, r * 0.13, 0, Math.PI * 2);
+      ctx.arc(R * 0.05, -R * 0.45, R * 0.14, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    function drawGhost(x, y, body, frightened) {
-      const gw = r * 1.75;
-      const gh = r * 1.9;
+    /** Classic ghost. lookDir: -1 left, +1 right */
+    function drawGhost(x, y, color, lookDir, frightened) {
+      const gw = R * 1.85;
+      const gh = R * 2.0;
       ctx.save();
       ctx.translate(x, y);
-      ctx.fillStyle = frightened ? "#2121de" : body;
+
+      // body
+      ctx.fillStyle = frightened ? "#2121ff" : color;
       ctx.beginPath();
-      ctx.arc(0, -gh * 0.12, gw / 2, Math.PI, 0, false);
-      ctx.lineTo(gw / 2, gh * 0.42);
-      for (let i = 3; i >= 0; i--) {
-        const sx = gw / 2 - (gw * i) / 3;
-        const sy = gh * 0.42 + (i % 2 === 0 ? 0 : -gh * 0.14);
+      ctx.arc(0, -gh * 0.15, gw / 2, Math.PI, 0, false);
+      ctx.lineTo(gw / 2, gh * 0.4);
+      // scalloped bottom (3 waves)
+      const waves = 3;
+      for (let i = waves; i >= 0; i--) {
+        const t = i / waves;
+        const sx = gw / 2 - gw * t;
+        const sy = gh * 0.4 + (i % 2 === 0 ? 0 : -gh * 0.16);
         ctx.lineTo(sx, sy);
       }
       ctx.closePath();
       ctx.fill();
-      const ey = -gh * 0.18;
-      ctx.fillStyle = "#fff";
+
+      // white eyes
+      const ey = -gh * 0.2;
+      const ex = gw * 0.2;
+      ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.ellipse(-gw * 0.18, ey, gw * 0.14, gw * 0.16, 0, 0, Math.PI * 2);
-      ctx.ellipse(gw * 0.18, ey, gw * 0.14, gw * 0.16, 0, 0, Math.PI * 2);
+      ctx.ellipse(-ex, ey, gw * 0.15, gw * 0.18, 0, 0, Math.PI * 2);
+      ctx.ellipse(ex, ey, gw * 0.15, gw * 0.18, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = frightened ? "#fff" : "#2121de";
-      const pupilShift = frightened ? 0.04 : -0.03;
+
+      // pupils look in direction
+      ctx.fillStyle = frightened ? "#ffffff" : "#2121de";
+      const px = lookDir * gw * 0.06;
       ctx.beginPath();
-      ctx.arc(-gw * (0.14 - pupilShift), ey, gw * 0.07, 0, Math.PI * 2);
-      ctx.arc(gw * (0.22 + pupilShift), ey, gw * 0.07, 0, Math.PI * 2);
+      ctx.arc(-ex + px, ey, gw * 0.08, 0, Math.PI * 2);
+      ctx.arc(ex + px, ey, gw * 0.08, 0, Math.PI * 2);
       ctx.fill();
+
       if (frightened) {
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "#ffb8ff";
+        ctx.lineWidth = 1.6;
+        ctx.lineCap = "round";
         ctx.beginPath();
-        ctx.moveTo(-gw * 0.28, gh * 0.12);
-        ctx.quadraticCurveTo(-gw * 0.1, gh * 0.22, 0, gh * 0.12);
-        ctx.quadraticCurveTo(gw * 0.1, gh * 0.02, gw * 0.28, gh * 0.12);
+        ctx.moveTo(-gw * 0.3, gh * 0.08);
+        ctx.quadraticCurveTo(-gw * 0.1, gh * 0.2, 0, gh * 0.08);
+        ctx.quadraticCurveTo(gw * 0.1, -gh * 0.02, gw * 0.3, gh * 0.08);
         ctx.stroke();
       }
+
       ctx.restore();
     }
 
-    function drawEyesOnly(x, y) {
+    function drawGhostEyes(x, y) {
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(x - 7, y - 4, 5, 6, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + 7, y - 4, 5, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - 8, y - 3, 6, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 8, y - 3, 6, 7, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#2121de";
       ctx.beginPath();
-      ctx.arc(x - 5, y - 4, 2.2, 0, Math.PI * 2);
-      ctx.arc(x + 9, y - 4, 2.2, 0, Math.PI * 2);
+      ctx.arc(x - 6, y - 3, 2.5, 0, Math.PI * 2);
+      ctx.arc(x + 10, y - 3, 2.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
     function frame(now) {
       const t = Math.min(1, (now - t0) / DURATION_MS);
-      const e = t * t * (3 - 2 * t);
+      const e = t * t * (3 - 2 * t); // smoothstep
 
+      // clear
       ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(0, 0, W, H);
 
-      ctx.strokeStyle = "#1a1ab0";
-      ctx.lineWidth = 3;
+      // maze corridor
+      const railY1 = cy - R * 2.6;
+      const railY2 = cy + R * 2.6;
+      ctx.strokeStyle = "#2121de";
+      ctx.lineWidth = 3.5;
+      ctx.strokeRect(laneL - 8, railY1 - 4, laneR - laneL + 16, railY2 - railY1 + 8);
+      ctx.strokeStyle = "#1919a6";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(w * 0.06, cy - r * 2.4);
-      ctx.lineTo(w * 0.94, cy - r * 2.4);
-      ctx.moveTo(w * 0.06, cy + r * 2.4);
-      ctx.lineTo(w * 0.94, cy + r * 2.4);
+      ctx.moveTo(laneL, railY1);
+      ctx.lineTo(laneR, railY1);
+      ctx.moveTo(laneL, railY2);
+      ctx.lineTo(laneR, railY2);
       ctx.stroke();
-      ctx.strokeStyle = "#2a2ad0";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(w * 0.05, cy - r * 2.55, w * 0.9, r * 5.1);
 
-      const pacX = pacStart + (pacEnd - pacStart) * e;
-      const mouth = (Math.sin(now / 70) + 1) / 2;
-
-      for (let i = 0; i < pellets.length; i++) {
-        const p = pellets[i];
-        if (!p.eaten && pacX >= p.x - r * 0.2) p.eaten = true;
-        if (!p.eaten) {
-          ctx.fillStyle = "#ffb897";
-          ctx.beginPath();
-          ctx.arc(p.x, cy, Math.max(2.5, r * 0.16), 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
+      // --- positions ---
+      // Pac-Man always moves left → right
+      const pacX = laneL + R * 1.5 + (laneR - laneL - R * 3) * e;
 
       let ghostX;
       let ghostEaten = false;
-      if (chase) {
-        const ahead = 95 + r;
-        ghostX = pacX + ahead * (1 - e * 0.85);
-        if (ghostX < pacX + r * 0.9) ghostX = pacX + r * 0.9;
-        if (t > 0.82) ghostX = pacX + r * 0.5;
-        if (t > 0.9) ghostEaten = true;
+      let ghostFrightened = false;
+      let ghostLook = 1; // +1 right, -1 left
+
+      if (isChase) {
+        // Ghost flees ahead (to the RIGHT of Pac-Man)
+        ghostFrightened = t > 0.28;
+        ghostLook = 1;
+        const lead = R * 4.5 * (1 - e * 0.75) + R * 1.2;
+        ghostX = pacX + lead;
+        if (t > 0.8) ghostX = pacX + R * 0.7;
+        if (t > 0.88) ghostEaten = true;
       } else {
-        const gap = 110 - e * 40;
-        ghostX = pacX - gap;
+        // Ghost HUNTS from BEHIND (to the LEFT of Pac-Man) — Pac-Man is ahead
+        ghostLook = 1; // looking right toward Pac-Man
+        // start further back, close the gap over time but stay behind
+        const gap = R * 5.5 - e * R * 2.2; // always > R*3
+        ghostX = pacX - Math.max(gap, R * 3.2);
       }
 
-      const frightened = chase && t > 0.35 && !ghostEaten;
+      // candy — eat only when Pac-Man's mouth reaches the dot
+      const mouthFront = pacX + R * 0.55;
+      for (let i = 0; i < candy.length; i++) {
+        const c = candy[i];
+        if (!c.eaten && mouthFront >= c.x) c.eaten = true;
+        if (c.eaten) continue;
+        ctx.fillStyle = c.power ? "#ffb897" : "#ffb8ae";
+        ctx.beginPath();
+        ctx.arc(c.x, cy, c.power ? R * 0.38 : R * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // draw ghost under Pac-Man
       if (!ghostEaten) {
-        drawGhost(ghostX, cy, "#ff0000", frightened);
+        drawGhost(
+          ghostX,
+          cy,
+          "#ff0000",
+          ghostLook,
+          ghostFrightened,
+        );
       } else {
-        drawEyesOnly(ghostX + (t - 0.9) * 80, cy);
+        // eyes flee upward-right after being eaten
+        drawGhostEyes(ghostX + (t - 0.88) * W * 0.15, cy - (t - 0.88) * 40);
       }
 
+      // Pac-Man chomp
+      const mouth = (Math.sin(now / 65) + 1) / 2;
       drawPac(pacX, cy, mouth);
 
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      // label
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "13px ui-monospace, SFMono-Regular, Menlo, monospace";
       ctx.textAlign = "center";
       ctx.fillText(
-        chase ? "pwnhub.in  →  portfolio" : "blog.pwnhub.in  →  lab notes",
-        w / 2,
-        h - 14,
+        isChase
+          ? "→  pwnhub.in  (chase the ghost)"
+          : "→  blog.pwnhub.in  (ghost is hunting you)",
+        W / 2,
+        H - 16,
       );
 
-      if (t < 1) requestAnimationFrame(frame);
-      else {
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
         window.clearTimeout(failSafe);
-        window.setTimeout(go, 100);
+        window.setTimeout(finish, 80);
       }
     }
 
@@ -216,16 +282,12 @@
         e.preventDefault();
         e.stopPropagation();
         const direction = el.getAttribute("data-xsite-nav") || "to-blog";
-        const url = el.getAttribute("href") || BLOG_URL;
-        playPacmanTransition(url, direction);
+        const href = el.getAttribute("href") || BLOG_URL;
+        playPacmanTransition(href, direction);
       });
     });
   }
 
-  /**
-   * Arrival from blog: ?xsite=to-portfolio
-   * sessionStorage CANNOT work (different origins). Query param does.
-   */
   function handleArrivalFromBlog() {
     var params;
     try {
@@ -236,7 +298,6 @@
     var dir = params.get(XSITE_QUERY);
     if (dir !== "to-portfolio" && dir !== "from-blog") return;
 
-    // Clean URL without reload
     try {
       params.delete(XSITE_QUERY);
       var q = params.toString();
@@ -256,9 +317,7 @@
           window.app.loader.timeouts.forEach(clearTimeout);
           window.app.loader.timeouts = [];
         }
-        if (window.app && window.app.loader) {
-          window.app.loader.circle = null;
-        }
+        if (window.app && window.app.loader) window.app.loader.circle = null;
       } catch (_) {}
     }
 
@@ -283,7 +342,6 @@
       }, 700);
     }
 
-    // Lift when WebGL START fires, or body.started, or timeout
     var tries = 0;
     var poll = window.setInterval(function () {
       tries++;
@@ -297,33 +355,21 @@
       if (
         document.body &&
         document.body.classList.contains("started") &&
-        tries > 12
+        tries > 15
       ) {
         window.clearInterval(poll);
         lift();
         return;
       }
-      if (tries > 50) {
+      if (tries > 55) {
         window.clearInterval(poll);
         lift();
       }
     }, 80);
-
     window.setTimeout(lift, 5000);
-
-    // Also listen if hey becomes available later
-    window.addEventListener("load", function () {
-      window.setTimeout(function () {
-        try {
-          if (window.hey && window.hey.START) lift();
-        } catch (_) {}
-      }, 200);
-    });
   }
 
-  // Run arrival ASAP (script is deferred — also called from head inline)
   handleArrivalFromBlog();
-  window.__pwnhubHandleXSiteArrival = handleArrivalFromBlog;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", wire);
