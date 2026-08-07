@@ -1,14 +1,14 @@
 /**
  * Pac-Man cross-site transition (portfolio @ pwnhub.in)
  *
- * Space during cinema → real maze + Web Audio SFX.
- * Esc / Enter → navigate.
- * Handoff: ?xsite=… + cookie Domain=.pwnhub.in
+ * One continuous maze from the start (same sprites everywhere).
+ * Intro = autoplay scene. Space = take over + show full HUD.
+ * Esc / Enter = navigate. Handoff: ?xsite=… + cookie Domain=.pwnhub.in
  */
 (function () {
   const BLOG_URL = "https://blog.pwnhub.in";
   const XSITE_QUERY = "xsite";
-  const CINEMA_MS = 2600;
+  const INTRO_MS = 3200;
 
   const MAZE_STR = [
     "###################",
@@ -137,7 +137,7 @@
         beep(659, 0.14, "square", 0.08, 0.2);
       },
       chomp: function () {
-        beep(chompHi ? 620 : 480, 0.045, "triangle", 0.05);
+        beep(chompHi ? 620 : 480, 0.04, "triangle", 0.045);
         chompHi = !chompHi;
       },
       power: function () {
@@ -174,10 +174,40 @@
     overlay.style.cssText =
       "position:fixed;inset:0;z-index:2147483646;background:#000;display:flex;align-items:center;justify-content:center;outline:none;touch-action:none";
 
+    var frame = document.createElement("div");
+    frame.style.cssText =
+      "position:relative;display:flex;flex-direction:column;align-items:stretch;border:3px solid #2121de;border-radius:8px;background:#000;box-shadow:0 0 0 2px #1919a6,0 0 40px rgba(33,33,222,0.35);overflow:hidden;max-width:calc(100vw - 16px)";
+
     var canvas = document.createElement("canvas");
     canvas.tabIndex = 0;
     canvas.style.cssText = "outline:none;display:block;max-width:100%";
-    overlay.appendChild(canvas);
+
+    var hud = document.createElement("div");
+    hud.style.cssText =
+      "display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;background:#0a0a14;border-top:2px solid #2121de;font-family:Monaco,Menlo,monospace;color:#ffcc00;font-size:12px";
+    var hudScore = document.createElement("span");
+    hudScore.textContent = "SCORE 0";
+    var hudLives = document.createElement("span");
+    hudLives.textContent = "♥♥♥";
+    var hudHint = document.createElement("span");
+    hudHint.style.color = "rgba(255,255,255,0.55)";
+    hudHint.textContent = "arrows / wasd";
+    hud.appendChild(hudScore);
+    hud.appendChild(hudHint);
+    hud.appendChild(hudLives);
+
+    var banner = document.createElement("div");
+    banner.style.cssText =
+      "display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 12px;background:#0a0a14;border-bottom:2px solid #2121de;font-family:Monaco,Menlo,monospace;font-size:11px;color:#ffcc00";
+    banner.innerHTML =
+      direction === "to-portfolio"
+        ? "<span>→ portfolio</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:#fff'>space take over</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc skip</span>"
+        : "<span>→ blog</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:#fff'>space take over</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc skip</span>";
+
+    frame.appendChild(banner);
+    frame.appendChild(canvas);
+    frame.appendChild(hud);
+    overlay.appendChild(frame);
     document.body.appendChild(overlay);
     document.documentElement.style.overflow = "hidden";
 
@@ -195,26 +225,36 @@
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var ctx = canvas.getContext("2d");
     var sfx = createSfx();
+    sfx.resume();
 
     var finished = false;
-    var mode = "cinema";
-    var cinemaRaf = 0;
-    var gameRaf = 0;
-    var failSafe = 0;
+    var phase = "intro";
+    var raf = 0;
+    var introTimer = 0;
     var focusTimer = 0;
     var want = null;
 
     function finish() {
       if (finished) return;
       finished = true;
-      window.clearTimeout(failSafe);
+      window.clearTimeout(introTimer);
       window.clearInterval(focusTimer);
-      cancelAnimationFrame(cinemaRaf);
-      cancelAnimationFrame(gameRaf);
+      cancelAnimationFrame(raf);
       document.removeEventListener("keydown", onKeyDown, true);
-      document.removeEventListener("keyup", onKeyUp, true);
       setHandoffCookie(direction);
       window.location.replace(withXSiteParam(url, direction));
+    }
+
+    function enterPlay() {
+      if (phase === "play" || finished) return;
+      phase = "play";
+      window.clearTimeout(introTimer);
+      sfx.resume();
+      sfx.start();
+      hud.style.display = "flex";
+      banner.innerHTML =
+        "<span style='color:#ffcc00'>YOUR MOVE</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc leave</span>";
+      grabFocus();
     }
 
     function readDir(e) {
@@ -257,10 +297,10 @@
       if (e.code === "Space" || e.key === " ") {
         e.preventDefault();
         e.stopPropagation();
-        if (mode === "cinema") startGame();
+        enterPlay();
         return;
       }
-      if (e.key === "Escape" || e.key === "Enter" || e.code === "Escape") {
+      if (e.key === "Escape" || e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
         finish();
@@ -271,16 +311,19 @@
         e.preventDefault();
         e.stopPropagation();
         want = d;
-        if (mode === "game") pac.next = d;
+        pac.next = d;
+        if (phase === "intro") enterPlay();
       }
     }
-    function onKeyUp() {}
 
     document.addEventListener("keydown", onKeyDown, true);
-    document.addEventListener("keyup", onKeyUp, true);
     focusTimer = window.setInterval(function () {
       if (!finished && document.activeElement !== canvas) grabFocus();
     }, 300);
+
+    introTimer = window.setTimeout(function () {
+      if (phase === "intro" && !finished) finish();
+    }, INTRO_MS);
 
     function drawPac(x, y, r, facing, open) {
       var base = Math.atan2(facing.y, facing.x);
@@ -311,7 +354,11 @@
       var domeR = w / 2;
       ctx.save();
       ctx.translate(x, y);
-      ctx.fillStyle = frightened ? "#2121ff" : color;
+      var flash =
+        frightened && powerUntil - performance.now() < 1800
+          ? Math.floor(performance.now() / 120) % 2 === 0
+          : false;
+      ctx.fillStyle = frightened ? (flash ? "#fff" : "#2121ff") : color;
       ctx.beginPath();
       ctx.moveTo(left, skirt);
       ctx.lineTo(left, top + domeR);
@@ -348,120 +395,32 @@
       ctx.restore();
     }
 
-    var chaseGhost = direction === "to-portfolio";
-    var cinemaW = Math.min(window.innerWidth, 960);
-    var cinemaH = Math.min(Math.round(window.innerHeight * 0.48), 360);
-
-    function sizeCinema() {
-      cinemaW = Math.min(window.innerWidth, 960);
-      cinemaH = Math.min(Math.round(window.innerHeight * 0.48), 360);
-      canvas.width = Math.round(cinemaW * dpr);
-      canvas.height = Math.round(cinemaH * dpr);
-      canvas.style.width = cinemaW + "px";
-      canvas.style.height = cinemaH + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    function drawEyesOnly(x, y) {
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.ellipse(x - 4, y, 3.5, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 4, y, 3.5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2121de";
+      ctx.beginPath();
+      ctx.arc(x - 3, y, 1.6, 0, Math.PI * 2);
+      ctx.arc(x + 5, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
     }
-    sizeCinema();
-    var t0 = performance.now();
-    failSafe = window.setTimeout(finish, CINEMA_MS + 800);
 
-    var candy = [];
-    (function () {
-      var laneL = cinemaW * 0.07;
-      var laneR = cinemaW * 0.93;
-      var R = Math.max(18, Math.min(28, cinemaW * 0.034));
-      var pathLen = laneR - laneL - R * 3;
-      for (var i = 0; i < 20; i++) {
-        candy.push({
-          x: laneL + R * 2.2 + (pathLen * i) / 19,
-          eaten: false,
-          power: i === 0 || i === 19,
-        });
-      }
-    })();
-
-    function cinemaFrame(now) {
-      if (mode !== "cinema" || finished) return;
-      var W = cinemaW;
-      var H = cinemaH;
-      var cy = H * 0.5;
-      var R = Math.max(18, Math.min(28, W * 0.034));
-      var laneL = W * 0.07;
-      var laneR = W * 0.93;
-      var pathLen = laneR - laneL - R * 3;
-      var t = Math.min(1, (now - t0) / CINEMA_MS);
-      var e = t * t * (3 - 2 * t);
-
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-      var top = cy - R * 2.7;
-      var bot = cy + R * 2.7;
-      ctx.strokeStyle = "#2121de";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(laneL - 10, top - 6, laneR - laneL + 20, bot - top + 12);
-
-      var pacX = laneL + R * 1.6 + pathLen * e;
-      var open = (Math.sin(now / 60) + 1) / 2;
-      var ghostX;
-      var frightened = false;
-      var eaten = false;
-      if (chaseGhost) {
-        frightened = t > 0.25;
-        var lead = R * 5 * (1 - e * 0.7) + R * 1.4;
-        ghostX = Math.min(laneR - R, pacX + lead);
-        if (t > 0.78) ghostX = pacX + R * 0.85;
-        if (t > 0.88) eaten = true;
-      } else {
-        var minGap = R * 2.8;
-        var startGap = R * 6.5;
-        var gap = startGap - e * (startGap - minGap);
-        ghostX = pacX - Math.max(gap, minGap);
-        if (ghostX < laneL + R) ghostX = laneL + R;
-      }
-
-      var biteX = pacX + R * 0.35;
-      for (var ci = 0; ci < candy.length; ci++) {
-        var c = candy[ci];
-        if (!c.eaten && biteX >= c.x) c.eaten = true;
-        if (c.eaten) continue;
-        ctx.fillStyle = c.power ? "#ffb897" : "#ffcc66";
-        ctx.beginPath();
-        ctx.arc(c.x, cy, c.power ? R * 0.42 : R * 0.22, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (!eaten) drawGhost(ghostX, cy, R, "#ff0000", RIGHT, frightened);
-      drawPac(pacX, cy, R, RIGHT, open);
-
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.font = "13px Monaco, Menlo, monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(chaseGhost ? "→ portfolio" : "→ blog", W / 2, H - 28);
-      ctx.fillStyle = "#ffcc00";
-      ctx.font = "12px Monaco, Menlo, monospace";
-      ctx.fillText("space = play   ·   esc = skip", W / 2, H - 10);
-
-      if (t < 1) cinemaRaf = requestAnimationFrame(cinemaFrame);
-      else {
-        window.clearTimeout(failSafe);
-        window.setTimeout(finish, 80);
-      }
-    }
-    cinemaRaf = requestAnimationFrame(cinemaFrame);
-
-    // —— game ——
     var base = parseMaze();
     var grid = cloneGrid(base.grid);
     var TILE = 20;
-    var PAD = 32;
+    var PAD = 8;
     var score = 0;
     var lives = 3;
-    var remaining = 0;
+    var remaining = countPellets(grid);
     var powerUntil = 0;
     var invulnUntil = 0;
     var deadUntil = 0;
     var won = false;
     var mouth = 0;
-    var lastTs = 0;
+    var lastTs = performance.now();
     var chompCool = 0;
     var pac = { x: 0, y: 0, dir: LEFT, next: LEFT };
     var ghosts = [];
@@ -490,7 +449,7 @@
     }
 
     function hitsWall(px, py, allowGate) {
-      var rad = TILE * 0.35;
+      var rad = TILE * 0.32;
       var samples = [
         [px, py],
         [px - rad, py],
@@ -516,7 +475,6 @@
     function nearCenter(b) {
       var t = pixelToTile(b.x, b.y);
       var tc = tileCenter(t.c, t.r);
-      // tight zone so a step can leave it (wide zone + snap = frozen)
       return Math.hypot(b.x - tc.x, b.y - tc.y) < Math.max(1.5, TILE * 0.08);
     }
 
@@ -530,6 +488,16 @@
     function canMoveFrom(b, d, allowGate) {
       var t = pixelToTile(b.x, b.y);
       return !blocked(t.c + d.x, t.r + d.y, allowGate);
+    }
+
+    function openDirs(c, r, allowGate, forbid) {
+      var opts = [];
+      for (var i = 0; i < DIRS.length; i++) {
+        var d = DIRS[i];
+        if (forbid && d.x === forbid.x && d.y === forbid.y) continue;
+        if (!blocked(c + d.x, r + d.y, allowGate)) opts.push(d);
+      }
+      return opts;
     }
 
     function resetActors() {
@@ -556,12 +524,12 @@
       });
     }
 
-    function layoutGame() {
-      var maxW = Math.min(window.innerWidth - 16, 760);
-      var maxH = Math.min(window.innerHeight - 24, 840);
-      TILE = Math.max(14, Math.floor(Math.min(maxW / COLS, (maxH - PAD) / ROWS)));
+    function layout() {
+      var maxW = Math.min(window.innerWidth - 24, 720);
+      var maxH = Math.min(window.innerHeight - 100, 780);
+      TILE = Math.max(12, Math.floor(Math.min(maxW / COLS, (maxH - PAD) / ROWS)));
       var w = TILE * COLS;
-      var h = TILE * ROWS + PAD;
+      var h = TILE * ROWS + PAD * 2;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       canvas.style.width = w + "px";
@@ -569,36 +537,14 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function startGame() {
-      if (mode === "game") return;
-      mode = "game";
-      window.clearTimeout(failSafe);
-      cancelAnimationFrame(cinemaRaf);
-      sfx.resume();
-      sfx.start();
-      grid = cloneGrid(base.grid);
-      remaining = countPellets(grid);
-      score = 0;
-      lives = 3;
-      powerUntil = 0;
-      invulnUntil = 0;
-      deadUntil = 0;
-      won = false;
-      chompCool = 0;
-      want = LEFT;
-      layoutGame();
-      resetActors();
-      lastTs = performance.now();
-      grabFocus();
-      gameRaf = requestAnimationFrame(gameFrame);
-    }
+    layout();
+    resetActors();
 
     function moveBody(b, speedPx, dt, allowGate) {
       if (b.next.x === -b.dir.x && b.next.y === -b.dir.y) {
         b.dir = { x: b.next.x, y: b.next.y };
       }
       var wantTurn = b.next.x !== b.dir.x || b.next.y !== b.dir.y;
-      // only snap when turning or blocked — never every frame
       if (nearCenter(b)) {
         if (wantTurn && canMoveFrom(b, b.next, allowGate)) {
           snapToCenter(b);
@@ -608,7 +554,11 @@
           if (canMoveFrom(b, b.next, allowGate)) {
             b.dir = { x: b.next.x, y: b.next.y };
           } else {
-            return;
+            var t0 = pixelToTile(b.x, b.y);
+            var opts0 = openDirs(t0.c, t0.r, allowGate);
+            if (opts0.length === 0) return;
+            b.dir = opts0[Math.floor(Math.random() * opts0.length)];
+            b.next = b.dir;
           }
         }
       }
@@ -624,13 +574,41 @@
         if (b.dir.x !== 0) {
           var tr = pixelToTile(b.x, b.y);
           b.y = PAD + tr.r * TILE + TILE / 2;
-        } else if (b.dir.y !== 0) {
+        } else {
           var tc = pixelToTile(b.x, b.y);
           b.x = tc.c * TILE + TILE / 2;
         }
       } else {
         snapToCenter(b);
       }
+    }
+
+    function autopilotPac() {
+      if (!nearCenter(pac)) return;
+      snapToCenter(pac);
+      var t = pixelToTile(pac.x, pac.y);
+      var opts = openDirs(t.c, t.r, false, { x: -pac.dir.x, y: -pac.dir.y });
+      var all = opts.length ? opts : openDirs(t.c, t.r, false);
+      if (all.length === 0) return;
+      var best = all[0];
+      var bestScore = -1;
+      for (var i = 0; i < all.length; i++) {
+        var d = all[i];
+        var nc = t.c + d.x;
+        var nr = t.r + d.y;
+        if (nc < 0) nc = COLS - 1;
+        if (nc >= COLS) nc = 0;
+        if (nr < 0 || nr >= ROWS) continue;
+        var cell = grid[nr][nc];
+        var s = cell === "power" ? 3 : cell === "pellet" ? 2 : 1;
+        if (d.x === pac.dir.x && d.y === pac.dir.y) s += 0.5;
+        if (s > bestScore) {
+          bestScore = s;
+          best = d;
+        }
+      }
+      pac.next = best;
+      pac.dir = best;
     }
 
     function pickGhost(g) {
@@ -653,12 +631,18 @@
         opts.push(d);
       }
       if (opts.length === 0) {
-        g.dir = { x: -g.dir.x, y: -g.dir.y };
+        var any = openDirs(t.c, t.r, true);
+        if (any.length === 0) return;
+        g.dir = any[0];
         g.next = g.dir;
         return;
       }
       if (g.mode === "frightened") {
-        g.dir = opts[Math.floor(Math.random() * opts.length)];
+        var cont = null;
+        for (var j = 0; j < opts.length; j++) {
+          if (opts[j].x === g.dir.x && opts[j].y === g.dir.y) cont = opts[j];
+        }
+        g.dir = cont || opts[Math.floor(Math.random() * opts.length)];
         g.next = g.dir;
         return;
       }
@@ -677,8 +661,8 @@
       }
       var best = opts[0];
       var bestD = Infinity;
-      for (var j = 0; j < opts.length; j++) {
-        var od = opts[j];
+      for (var k = 0; k < opts.length; k++) {
+        var od = opts[k];
         var px = g.x + od.x * TILE;
         var py = g.y + od.y * TILE;
         var dist = (px - tx) * (px - tx) + (py - ty) * (py - ty);
@@ -693,10 +677,15 @@
 
     function killPac(now) {
       if (now < invulnUntil) return;
+      if (phase === "intro") {
+        resetActors();
+        return;
+      }
       sfx.death();
       lives -= 1;
       deadUntil = now + 700;
       invulnUntil = now + 1400;
+      hudLives.textContent = "♥".repeat(Math.max(0, lives));
       if (lives <= 0) {
         window.setTimeout(finish, 1100);
         return;
@@ -706,8 +695,8 @@
       powerUntil = 0;
     }
 
-    function gameFrame(now) {
-      if (mode !== "game" || finished) return;
+    function tick(now) {
+      if (finished) return;
       var dt = (now - lastTs) / 1000;
       lastTs = now;
       if (!isFinite(dt) || dt <= 0) dt = 1 / 60;
@@ -715,8 +704,10 @@
       mouth += dt * 12;
 
       if (!won && lives > 0 && now > deadUntil) {
-        if (want) pac.next = want;
-        moveBody(pac, TILE * 7, dt, false);
+        if (phase === "intro") autopilotPac();
+        else if (want) pac.next = want;
+
+        moveBody(pac, TILE * (phase === "intro" ? 6 : 7), dt, false);
 
         var pt = pixelToTile(pac.x, pac.y);
         if (pt.r >= 0 && pt.r < ROWS && nearCenter(pac)) {
@@ -726,7 +717,7 @@
             score += 10;
             remaining -= 1;
             if (now > chompCool) {
-              sfx.chomp();
+              if (phase === "play") sfx.chomp();
               chompCool = now + 85;
             }
           } else if (grid[pt.r][cc] === "power") {
@@ -734,20 +725,29 @@
             score += 50;
             remaining -= 1;
             powerUntil = now + 6500;
-            sfx.power();
+            if (phase === "play") sfx.power();
             for (var gi = 0; gi < ghosts.length; gi++) {
-              if (ghosts[gi].mode !== "eaten") ghosts[gi].mode = "frightened";
+              if (ghosts[gi].mode !== "eaten") {
+                ghosts[gi].mode = "frightened";
+                ghosts[gi].dir = {
+                  x: -ghosts[gi].dir.x,
+                  y: -ghosts[gi].dir.y,
+                };
+                ghosts[gi].next = ghosts[gi].dir;
+              }
             }
           }
+          if (phase === "play") hudScore.textContent = "SCORE " + score;
         }
 
-        if (remaining <= 0) {
+        if (remaining <= 0 && phase === "play") {
           won = true;
           sfx.win();
           window.setTimeout(finish, 1400);
         }
 
-        if (now >= powerUntil) {
+        if (powerUntil > 0 && now >= powerUntil) {
+          powerUntil = 0;
           for (var gj = 0; gj < ghosts.length; gj++) {
             if (ghosts[gj].mode === "frightened") ghosts[gj].mode = "chase";
           }
@@ -767,7 +767,7 @@
           pickGhost(g);
           var speed =
             g.mode === "frightened"
-              ? TILE * 3.5
+              ? TILE * 4.2
               : g.mode === "eaten"
                 ? TILE * 10
                 : TILE * 5.5;
@@ -779,7 +779,10 @@
             if (g.mode === "frightened") {
               g.mode = "eaten";
               score += 200;
-              sfx.eatGhost();
+              if (phase === "play") {
+                sfx.eatGhost();
+                hudScore.textContent = "SCORE " + score;
+              }
             } else if (g.mode === "chase") {
               killPac(now);
             }
@@ -788,21 +791,12 @@
       }
 
       var W = TILE * COLS;
-      var H = TILE * ROWS + PAD;
+      var H = TILE * ROWS + PAD * 2;
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
-
-      ctx.fillStyle = "#ffcc00";
-      ctx.font =
-        "bold " + Math.max(12, Math.floor(TILE * 0.55)) + "px Monaco, Menlo, monospace";
-      ctx.textAlign = "left";
-      ctx.fillText("SCORE " + score, 8, 20);
-      ctx.textAlign = "right";
-      ctx.fillText("♥".repeat(Math.max(0, lives)), W - 8, 20);
-      ctx.textAlign = "center";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.font = "11px Monaco, Menlo, monospace";
-      ctx.fillText("arrows / wasd  ·  esc leave", W / 2, 20);
+      ctx.strokeStyle = "#1919a6";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(2, PAD - 2, W - 4, TILE * ROWS + 4);
 
       for (var r = 0; r < ROWS; r++) {
         for (var c = 0; c < COLS; c++) {
@@ -832,28 +826,25 @@
       var rad = TILE * 0.42;
       for (var gl = 0; gl < ghosts.length; gl++) {
         var gg = ghosts[gl];
-        if (gg.mode === "eaten") {
-          ctx.fillStyle = "#fff";
-          ctx.beginPath();
-          ctx.ellipse(gg.x - 4, gg.y, 3.5, 4, 0, 0, Math.PI * 2);
-          ctx.ellipse(gg.x + 4, gg.y, 3.5, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#2121de";
-          ctx.beginPath();
-          ctx.arc(gg.x - 3, gg.y, 1.6, 0, Math.PI * 2);
-          ctx.arc(gg.x + 5, gg.y, 1.6, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          drawGhost(gg.x, gg.y, rad, gg.color, gg.dir, gg.mode === "frightened");
-        }
+        if (gg.mode === "eaten") drawEyesOnly(gg.x, gg.y);
+        else drawGhost(gg.x, gg.y, rad, gg.color, gg.dir, gg.mode === "frightened");
       }
 
-      if (now > deadUntil || lives <= 0) {
+      if (now > deadUntil || lives <= 0 || phase === "intro") {
         var open = (Math.sin(mouth) + 1) / 2;
         drawPac(pac.x, pac.y, rad, pac.dir, open);
       }
 
-      if (won || lives <= 0) {
+      if (phase === "intro") {
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillRect(0, H - 22, W, 22);
+        ctx.fillStyle = "#ffcc00";
+        ctx.font = "11px Monaco, Menlo, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("playing…  space = take over", W / 2, H - 7);
+      }
+
+      if (won || (lives <= 0 && phase === "play")) {
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = won ? "#ffcc00" : "#ff5555";
@@ -865,8 +856,10 @@
         ctx.fillText("warping…", W / 2, H / 2 + 28);
       }
 
-      gameRaf = requestAnimationFrame(gameFrame);
+      raf = requestAnimationFrame(tick);
     }
+
+    raf = requestAnimationFrame(tick);
   }
 
   function wire() {
