@@ -1,16 +1,18 @@
 /**
  * Pac-Man cross-site transition (portfolio @ pwnhub.in)
  *
- * One continuous maze from the start (same sprites everywhere).
- * Intro = autoplay scene. Space = take over + show full HUD.
- * Esc / Enter = navigate. Handoff: ?xsite=… + cookie Domain=.pwnhub.in
+ * Centered 100×100 camera, Pac always in the middle, maze scrolls.
+ * Intro autoplays. Space = take over (autoplay fully stops) + HUD.
+ * Handoff: ?xsite=… + cookie Domain=.pwnhub.in
  */
 (function () {
-  const BLOG_URL = "https://blog.pwnhub.in";
-  const XSITE_QUERY = "xsite";
-  const INTRO_MS = 3200;
+  var BLOG_URL = "https://blog.pwnhub.in";
+  var XSITE_QUERY = "xsite";
+  var INTRO_MS = 4000;
+  var VIEW = 100;
+  var TILE = 14;
 
-  const MAZE_STR = [
+  var MAZE_STR = [
     "###################",
     "#........#........#",
     "#o##.###.#.###.##o#",
@@ -33,21 +35,22 @@
     "#.................#",
     "###################",
   ];
-  const ROWS = MAZE_STR.length;
-  const COLS = MAZE_STR[0].length;
-  const UP = { x: 0, y: -1 };
-  const DOWN = { x: 0, y: 1 };
-  const LEFT = { x: -1, y: 0 };
-  const RIGHT = { x: 1, y: 0 };
-  const DIRS = [UP, DOWN, LEFT, RIGHT];
+  var ROWS = MAZE_STR.length;
+  var COLS = MAZE_STR[0].length;
+  var WORLD_W = COLS * TILE;
+  var UP = { x: 0, y: -1 };
+  var DOWN = { x: 0, y: 1 };
+  var LEFT = { x: -1, y: 0 };
+  var RIGHT = { x: 1, y: 0 };
+  var DIRS = [UP, DOWN, LEFT, RIGHT];
 
   function withXSiteParam(url, direction) {
     try {
-      const u = new URL(url, window.location.href);
+      var u = new URL(url, window.location.href);
       u.searchParams.set(XSITE_QUERY, direction);
       return u.toString();
     } catch (_) {
-      const join = url.indexOf("?") >= 0 ? "&" : "?";
+      var join = url.indexOf("?") >= 0 ? "&" : "?";
       return url + join + XSITE_QUERY + "=" + encodeURIComponent(direction);
     }
   }
@@ -62,13 +65,13 @@
   }
 
   function parseMaze() {
-    const grid = [];
-    let pacC = 9;
-    let pacR = 15;
-    for (let r = 0; r < ROWS; r++) {
-      const row = [];
-      for (let c = 0; c < COLS; c++) {
-        const ch = MAZE_STR[r][c];
+    var grid = [];
+    var pacC = 9;
+    var pacR = 15;
+    for (var r = 0; r < ROWS; r++) {
+      var row = [];
+      for (var c = 0; c < COLS; c++) {
+        var ch = MAZE_STR[r][c];
         if (ch === "#") row.push("wall");
         else if (ch === ".") row.push("pellet");
         else if (ch === "o") row.push("power");
@@ -176,40 +179,63 @@
 
     var frame = document.createElement("div");
     frame.style.cssText =
-      "position:relative;display:flex;flex-direction:column;align-items:stretch;border:3px solid #2121de;border-radius:8px;background:#000;box-shadow:0 0 0 2px #1919a6,0 0 40px rgba(33,33,222,0.35);overflow:hidden;max-width:calc(100vw - 16px)";
-
-    var canvas = document.createElement("canvas");
-    canvas.tabIndex = 0;
-    canvas.style.cssText = "outline:none;display:block;max-width:100%";
-
-    var hud = document.createElement("div");
-    hud.style.cssText =
-      "display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;background:#0a0a14;border-top:2px solid #2121de;font-family:Monaco,Menlo,monospace;color:#ffcc00;font-size:12px";
-    var hudScore = document.createElement("span");
-    hudScore.textContent = "SCORE 0";
-    var hudLives = document.createElement("span");
-    hudLives.textContent = "♥♥♥";
-    var hudHint = document.createElement("span");
-    hudHint.style.color = "rgba(255,255,255,0.55)";
-    hudHint.textContent = "arrows / wasd";
-    hud.appendChild(hudScore);
-    hud.appendChild(hudHint);
-    hud.appendChild(hudLives);
+      "display:flex;flex-direction:column;align-items:center;gap:8px";
 
     var banner = document.createElement("div");
     banner.style.cssText =
-      "display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 12px;background:#0a0a14;border-bottom:2px solid #2121de;font-family:Monaco,Menlo,monospace;font-size:11px;color:#ffcc00";
-    banner.innerHTML =
+      "font-family:Monaco,Menlo,monospace;font-size:10px;color:#ffcc00;text-align:center;max-width:200px;line-height:1.4";
+    banner.textContent =
       direction === "to-portfolio"
-        ? "<span>→ portfolio</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:#fff'>space take over</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc skip</span>"
-        : "<span>→ blog</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:#fff'>space take over</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc skip</span>";
+        ? "→ portfolio · space take over · esc skip"
+        : "→ blog · space take over · esc skip";
+
+    var windowBox = document.createElement("div");
+    windowBox.style.cssText =
+      "width:" +
+      VIEW +
+      "px;height:" +
+      VIEW +
+      "px;border:3px solid #2121de;border-radius:6px;box-shadow:0 0 0 2px #1919a6,0 0 28px rgba(33,33,222,0.4);overflow:hidden;background:#000;flex-shrink:0";
+
+    var canvas = document.createElement("canvas");
+    canvas.tabIndex = 0;
+    canvas.style.cssText =
+      "width:" + VIEW + "px;height:" + VIEW + "px;display:block;outline:none";
+    windowBox.appendChild(canvas);
+
+    var hud = document.createElement("div");
+    hud.style.cssText =
+      "display:none;font-family:Monaco,Menlo,monospace;font-size:10px;color:#ffcc00;gap:10px;align-items:center;justify-content:center";
+    var hudScore = document.createElement("span");
+    hudScore.textContent = "0";
+    var hudLives = document.createElement("span");
+    hudLives.textContent = "♥♥♥";
+    hud.appendChild(hudScore);
+    hud.appendChild(hudLives);
 
     frame.appendChild(banner);
-    frame.appendChild(canvas);
+    frame.appendChild(windowBox);
     frame.appendChild(hud);
     overlay.appendChild(frame);
     document.body.appendChild(overlay);
     document.documentElement.style.overflow = "hidden";
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(VIEW * dpr);
+    canvas.height = Math.round(VIEW * dpr);
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var sfx = createSfx();
+    sfx.resume();
+
+    var finished = false;
+    var autoplay = true;
+    var awaitInput = false;
+    var raf = 0;
+    var introTimer = 0;
+    var focusTimer = 0;
+    var want = null;
 
     function grabFocus() {
       try {
@@ -221,18 +247,6 @@
     grabFocus();
     requestAnimationFrame(grabFocus);
     overlay.addEventListener("pointerdown", grabFocus);
-
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var ctx = canvas.getContext("2d");
-    var sfx = createSfx();
-    sfx.resume();
-
-    var finished = false;
-    var phase = "intro";
-    var raf = 0;
-    var introTimer = 0;
-    var focusTimer = 0;
-    var want = null;
 
     function finish() {
       if (finished) return;
@@ -246,14 +260,17 @@
     }
 
     function enterPlay() {
-      if (phase === "play" || finished) return;
-      phase = "play";
+      if (!autoplay || finished) return;
+      autoplay = false;
+      awaitInput = true;
+      want = null;
+      pac.next = { x: 0, y: 0 };
+      pac.dir = { x: 0, y: 0 };
       window.clearTimeout(introTimer);
       sfx.resume();
       sfx.start();
       hud.style.display = "flex";
-      banner.innerHTML =
-        "<span style='color:#ffcc00'>YOUR MOVE</span><span style='color:rgba(255,255,255,0.5)'>·</span><span style='color:rgba(255,255,255,0.55)'>esc leave</span>";
+      banner.textContent = "your move · arrows/wasd · esc leave";
       grabFocus();
     }
 
@@ -310,9 +327,11 @@
       if (d) {
         e.preventDefault();
         e.stopPropagation();
+        if (autoplay) enterPlay();
         want = d;
         pac.next = d;
-        if (phase === "intro") enterPlay();
+        if (pac.dir.x === 0 && pac.dir.y === 0) pac.dir = d;
+        awaitInput = false;
       }
     }
 
@@ -322,11 +341,13 @@
     }, 300);
 
     introTimer = window.setTimeout(function () {
-      if (phase === "intro" && !finished) finish();
+      if (autoplay && !finished) finish();
     }, INTRO_MS);
 
     function drawPac(x, y, r, facing, open) {
-      var base = Math.atan2(facing.y, facing.x);
+      var fx = facing.x || 1;
+      var fy = facing.y || 0;
+      var base = Math.atan2(fy, fx);
       var a = (0.2 + open * 0.35) * Math.PI;
       ctx.save();
       ctx.translate(x, y);
@@ -398,20 +419,18 @@
     function drawEyesOnly(x, y) {
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(x - 4, y, 3.5, 4, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + 4, y, 3.5, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(x - 3, y, 2.5, 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 3, y, 2.5, 3, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#2121de";
       ctx.beginPath();
-      ctx.arc(x - 3, y, 1.6, 0, Math.PI * 2);
-      ctx.arc(x + 5, y, 1.6, 0, Math.PI * 2);
+      ctx.arc(x - 2, y, 1.2, 0, Math.PI * 2);
+      ctx.arc(x + 4, y, 1.2, 0, Math.PI * 2);
       ctx.fill();
     }
 
     var base = parseMaze();
     var grid = cloneGrid(base.grid);
-    var TILE = 20;
-    var PAD = 8;
     var score = 0;
     var lives = 3;
     var remaining = countPellets(grid);
@@ -422,16 +441,14 @@
     var mouth = 0;
     var lastTs = performance.now();
     var chompCool = 0;
-    var pac = { x: 0, y: 0, dir: LEFT, next: LEFT };
-    var ghosts = [];
 
     function tileCenter(c, r) {
-      return { x: c * TILE + TILE / 2, y: PAD + r * TILE + TILE / 2 };
+      return { x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 };
     }
 
     function pixelToTile(px, py) {
       var c = Math.floor(px / TILE);
-      var r = Math.floor((py - PAD) / TILE);
+      var r = Math.floor(py / TILE);
       if (c < 0) c += COLS;
       if (c >= COLS) c -= COLS;
       return { c: c, r: r };
@@ -461,7 +478,7 @@
         var sx = samples[i][0];
         var sy = samples[i][1];
         var c = Math.floor(sx / TILE);
-        var r = Math.floor((sy - PAD) / TILE);
+        var r = Math.floor(sy / TILE);
         if (r < 0 || r >= ROWS) return true;
         if (c < 0) c += COLS;
         if (c >= COLS) c -= COLS;
@@ -475,7 +492,7 @@
     function nearCenter(b) {
       var t = pixelToTile(b.x, b.y);
       var tc = tileCenter(t.c, t.r);
-      return Math.hypot(b.x - tc.x, b.y - tc.y) < Math.max(1.5, TILE * 0.08);
+      return Math.hypot(b.x - tc.x, b.y - tc.y) < Math.max(1.2, TILE * 0.08);
     }
 
     function snapToCenter(b) {
@@ -486,6 +503,7 @@
     }
 
     function canMoveFrom(b, d, allowGate) {
+      if (d.x === 0 && d.y === 0) return false;
       var t = pixelToTile(b.x, b.y);
       return !blocked(t.c + d.x, t.r + d.y, allowGate);
     }
@@ -499,6 +517,9 @@
       }
       return opts;
     }
+
+    var pac = { x: 0, y: 0, dir: LEFT, next: LEFT };
+    var ghosts = [];
 
     function resetActors() {
       var p = tileCenter(base.pacC, base.pacR);
@@ -524,26 +545,22 @@
       });
     }
 
-    function layout() {
-      var maxW = Math.min(window.innerWidth - 24, 720);
-      var maxH = Math.min(window.innerHeight - 100, 780);
-      TILE = Math.max(12, Math.floor(Math.min(maxW / COLS, (maxH - PAD) / ROWS)));
-      var w = TILE * COLS;
-      var h = TILE * ROWS + PAD * 2;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    layout();
     resetActors();
 
     function moveBody(b, speedPx, dt, allowGate) {
+      if (b.dir.x === 0 && b.dir.y === 0) {
+        if (b.next.x !== 0 || b.next.y !== 0) {
+          if (canMoveFrom(b, b.next, allowGate)) {
+            b.dir = { x: b.next.x, y: b.next.y };
+          }
+        }
+        if (b.dir.x === 0 && b.dir.y === 0) return;
+      }
+
       if (b.next.x === -b.dir.x && b.next.y === -b.dir.y) {
         b.dir = { x: b.next.x, y: b.next.y };
       }
+
       var wantTurn = b.next.x !== b.dir.x || b.next.y !== b.dir.y;
       if (nearCenter(b)) {
         if (wantTurn && canMoveFrom(b, b.next, allowGate)) {
@@ -556,24 +573,28 @@
           } else {
             var t0 = pixelToTile(b.x, b.y);
             var opts0 = openDirs(t0.c, t0.r, allowGate);
-            if (opts0.length === 0) return;
+            if (opts0.length === 0) {
+              b.dir = { x: 0, y: 0 };
+              return;
+            }
             b.dir = opts0[Math.floor(Math.random() * opts0.length)];
             b.next = b.dir;
           }
         }
       }
-      var step = Math.max(2, speedPx * dt);
+
+      var step = Math.max(1.5, speedPx * dt);
       var nx = b.x + b.dir.x * step;
       var ny = b.y + b.dir.y * step;
-      var totalW = TILE * COLS;
-      if (nx < 0) nx += totalW;
-      if (nx >= totalW) nx -= totalW;
+      if (nx < 0) nx += WORLD_W;
+      if (nx >= WORLD_W) nx -= WORLD_W;
+
       if (!hitsWall(nx, ny, allowGate)) {
         b.x = nx;
         b.y = ny;
         if (b.dir.x !== 0) {
           var tr = pixelToTile(b.x, b.y);
-          b.y = PAD + tr.r * TILE + TILE / 2;
+          b.y = tr.r * TILE + TILE / 2;
         } else {
           var tc = pixelToTile(b.x, b.y);
           b.x = tc.c * TILE + TILE / 2;
@@ -677,7 +698,7 @@
 
     function killPac(now) {
       if (now < invulnUntil) return;
-      if (phase === "intro") {
+      if (autoplay) {
         resetActors();
         return;
       }
@@ -693,6 +714,9 @@
       resetActors();
       for (var i = 0; i < ghosts.length; i++) ghosts[i].mode = "chase";
       powerUntil = 0;
+      awaitInput = true;
+      pac.dir = { x: 0, y: 0 };
+      pac.next = { x: 0, y: 0 };
     }
 
     function tick(now) {
@@ -704,10 +728,13 @@
       mouth += dt * 12;
 
       if (!won && lives > 0 && now > deadUntil) {
-        if (phase === "intro") autopilotPac();
-        else if (want) pac.next = want;
-
-        moveBody(pac, TILE * (phase === "intro" ? 6 : 7), dt, false);
+        if (autoplay) {
+          autopilotPac();
+          moveBody(pac, TILE * 6, dt, false);
+        } else if (!awaitInput) {
+          if (want) pac.next = want;
+          moveBody(pac, TILE * 7, dt, false);
+        }
 
         var pt = pixelToTile(pac.x, pac.y);
         if (pt.r >= 0 && pt.r < ROWS && nearCenter(pac)) {
@@ -717,7 +744,7 @@
             score += 10;
             remaining -= 1;
             if (now > chompCool) {
-              if (phase === "play") sfx.chomp();
+              if (!autoplay) sfx.chomp();
               chompCool = now + 85;
             }
           } else if (grid[pt.r][cc] === "power") {
@@ -725,7 +752,7 @@
             score += 50;
             remaining -= 1;
             powerUntil = now + 6500;
-            if (phase === "play") sfx.power();
+            if (!autoplay) sfx.power();
             for (var gi = 0; gi < ghosts.length; gi++) {
               if (ghosts[gi].mode !== "eaten") {
                 ghosts[gi].mode = "frightened";
@@ -737,10 +764,10 @@
               }
             }
           }
-          if (phase === "play") hudScore.textContent = "SCORE " + score;
+          if (!autoplay) hudScore.textContent = String(score);
         }
 
-        if (remaining <= 0 && phase === "play") {
+        if (remaining <= 0 && !autoplay) {
           won = true;
           sfx.win();
           window.setTimeout(finish, 1400);
@@ -779,9 +806,9 @@
             if (g.mode === "frightened") {
               g.mode = "eaten";
               score += 200;
-              if (phase === "play") {
+              if (!autoplay) {
                 sfx.eatGhost();
-                hudScore.textContent = "SCORE " + score;
+                hudScore.textContent = String(score);
               }
             } else if (g.mode === "chase") {
               killPac(now);
@@ -790,19 +817,32 @@
         }
       }
 
-      var W = TILE * COLS;
-      var H = TILE * ROWS + PAD * 2;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = "#1919a6";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(2, PAD - 2, W - 4, TILE * ROWS + 4);
+      ctx.fillRect(0, 0, VIEW, VIEW);
+
+      var camX = pac.x - VIEW / 2;
+      var camY = pac.y - VIEW / 2;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, VIEW, VIEW);
+      ctx.clip();
+      ctx.translate(-camX, -camY);
 
       for (var r = 0; r < ROWS; r++) {
         for (var c = 0; c < COLS; c++) {
           var v = grid[r][c];
           var x = c * TILE;
-          var y = PAD + r * TILE;
+          var y = r * TILE;
+          if (
+            x + TILE < camX - TILE ||
+            x > camX + VIEW + TILE ||
+            y + TILE < camY - TILE ||
+            y > camY + VIEW + TILE
+          ) {
+            continue;
+          }
           if (v === "wall") {
             ctx.fillStyle = "#2121de";
             ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
@@ -812,7 +852,13 @@
           } else if (v === "pellet") {
             ctx.fillStyle = "#ffb897";
             ctx.beginPath();
-            ctx.arc(x + TILE / 2, y + TILE / 2, Math.max(2, TILE * 0.1), 0, Math.PI * 2);
+            ctx.arc(
+              x + TILE / 2,
+              y + TILE / 2,
+              Math.max(1.5, TILE * 0.1),
+              0,
+              Math.PI * 2,
+            );
             ctx.fill();
           } else if (v === "power") {
             ctx.fillStyle = "#ffb897";
@@ -826,34 +872,57 @@
       var rad = TILE * 0.42;
       for (var gl = 0; gl < ghosts.length; gl++) {
         var gg = ghosts[gl];
+        if (
+          gg.x < camX - TILE * 2 ||
+          gg.x > camX + VIEW + TILE * 2 ||
+          gg.y < camY - TILE * 2 ||
+          gg.y > camY + VIEW + TILE * 2
+        ) {
+          continue;
+        }
         if (gg.mode === "eaten") drawEyesOnly(gg.x, gg.y);
-        else drawGhost(gg.x, gg.y, rad, gg.color, gg.dir, gg.mode === "frightened");
+        else
+          drawGhost(gg.x, gg.y, rad, gg.color, gg.dir, gg.mode === "frightened");
       }
 
-      if (now > deadUntil || lives <= 0 || phase === "intro") {
-        var open = (Math.sin(mouth) + 1) / 2;
-        drawPac(pac.x, pac.y, rad, pac.dir, open);
+      var face =
+        pac.dir.x !== 0 || pac.dir.y !== 0 ? pac.dir : want || RIGHT;
+      var open = (Math.sin(mouth) + 1) / 2;
+      if (awaitInput && !autoplay) {
+        drawPac(pac.x, pac.y, rad, face, 0.4);
+      } else {
+        drawPac(pac.x, pac.y, rad, face, open);
       }
 
-      if (phase === "intro") {
-        ctx.fillStyle = "rgba(0,0,0,0.35)";
-        ctx.fillRect(0, H - 22, W, 22);
+      ctx.restore();
+
+      ctx.strokeStyle = "#1919a6";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, VIEW - 1, VIEW - 1);
+
+      if (autoplay) {
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fillRect(0, VIEW - 14, VIEW, 14);
         ctx.fillStyle = "#ffcc00";
-        ctx.font = "11px Monaco, Menlo, monospace";
+        ctx.font = "8px Monaco, Menlo, monospace";
         ctx.textAlign = "center";
-        ctx.fillText("playing…  space = take over", W / 2, H - 7);
+        ctx.fillText("space", VIEW / 2, VIEW - 4);
+      } else if (awaitInput) {
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fillRect(0, VIEW - 14, VIEW, 14);
+        ctx.fillStyle = "#fff";
+        ctx.font = "8px Monaco, Menlo, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("move!", VIEW / 2, VIEW - 4);
       }
 
-      if (won || (lives <= 0 && phase === "play")) {
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(0, 0, W, H);
+      if (won || (lives <= 0 && !autoplay)) {
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, VIEW, VIEW);
         ctx.fillStyle = won ? "#ffcc00" : "#ff5555";
-        ctx.font = "bold " + Math.max(18, TILE) + "px Monaco, Menlo, monospace";
+        ctx.font = "bold 11px Monaco, Menlo, monospace";
         ctx.textAlign = "center";
-        ctx.fillText(won ? "YOU WIN" : "GAME OVER", W / 2, H / 2);
-        ctx.fillStyle = "#fff";
-        ctx.font = "12px Monaco, Menlo, monospace";
-        ctx.fillText("warping…", W / 2, H / 2 + 28);
+        ctx.fillText(won ? "WIN" : "OVER", VIEW / 2, VIEW / 2 + 3);
       }
 
       raf = requestAnimationFrame(tick);
