@@ -1,55 +1,27 @@
 {
-  "name": "web",
-  "type": "module",
-  "version": "0.0.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "node-pty",
-      "esbuild"
-    ]
-  },
+  "name": "new",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "astro dev --host",
-    "build": "astro build",
-    "preview": "astro build && node server/preview.mjs",
-    "astro": "astro"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
-    "@activetheory/split-text": "^1.1.2",
-    "@astrojs/prism": "^3.3.0",
-    "@astrojs/react": "^4.4.2",
-    "@astrojs/sitemap": "^3.6.0",
-    "@astrojs/solid-js": "^5.1.3",
-    "@astrojs/vue": "^5.1.3",
-    "@tailwindcss/vite": "^4.0.9",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
-    "gsap": "^3.13.0",
-    "lenis": "^1.2.0",
-    "node-pty": "^1.1.0",
-    "ogl": "^1.0.11",
-    "prettier-plugin-glsl": "^0.2.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "sirv": "^3.0.2",
-    "smooothy": "0.0.35",
-    "solid-js": "^1.9.5",
-    "tailwindcss": "^4.0.9",
-    "three": "^0.174.0",
-    "virtual-scroll": "^2.2.1",
-    "vue": "^3.5.13",
-    "wiggle": "^0.0.17",
-    "wobble": "^1.5.1",
-    "ws": "^8.21.0"
+    "next": "16.4.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "astro": "^5.16.6",
-    "prettier": "^3.5.3",
-    "prettier-plugin-astro": "^0.14.1",
-    "prettier-plugin-tailwindcss": "^0.6.11",
-    "vite-plugin-glsl": "^1.3.3",
-    "vite-plugin-qrcode": "^0.2.4"
-  }
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@11.28.5"
 }
